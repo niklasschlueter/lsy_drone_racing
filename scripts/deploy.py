@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import logging
 import time
+import warnings
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -40,13 +41,21 @@ def main(config: str = "level3.toml", controller: str | None = None):
         controller: The name of the controller file in `lsy_drone_racing/control/` or None. If None,
             the controller specified in the config file is used.
     """
-    config = load_config(Path(__file__).parents[1] / "config" / config)
+    try:
+        config = load_config(Path(__file__).parents[1] / "config" / config)
+    except:
+        try:
+            config = load_config(config)
+        except:
+            raise ValueError
+
     env_id = "DroneRacingThrustDeploy-v0" if "Thrust" in config.env.id else "DroneRacingDeploy-v0"
     env: DroneRacingDeployEnv | DroneRacingThrustDeployEnv = gymnasium.make(env_id, config=config)
     obs, info = env.reset()
 
     control_path = Path(__file__).parents[1] / "lsy_drone_racing/control"
     controller_path = control_path / (controller or config.controller.file)
+    print(f"loading controller from: {controller_path}")
     controller_cls = load_controller(controller_path)
     controller = controller_cls(obs, info)
     try:
@@ -55,6 +64,7 @@ def main(config: str = "level3.toml", controller: str | None = None):
             t_loop = time.perf_counter()
             obs, info = env.obs, env.info
             action = controller.compute_control(obs, info)
+            env.start_time = t_loop
             next_obs, reward, terminated, truncated, info = env.step(action)
             controller.step_callback(action, next_obs, reward, terminated, truncated, info)
             obs = next_obs

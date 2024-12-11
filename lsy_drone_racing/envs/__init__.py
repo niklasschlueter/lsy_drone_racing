@@ -46,3 +46,10 @@ register(
     max_episode_steps=1800,
     disable_env_checker=True,
 )
+
+register(
+    id="ASYNCDroneRacingThrustDeploy-v0",
+    entry_point="lsy_drone_racing.envs.drone_racing_deploy_env:ASYNCDroneRacingThrustDeployEnv",
+    max_episode_steps=1800,
+    disable_env_checker=True,
+)

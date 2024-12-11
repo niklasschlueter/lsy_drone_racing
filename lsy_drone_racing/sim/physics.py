@@ -185,6 +185,24 @@ def sys_id_dynamics(
     drone.rpy[:] = drone.rpy + rpy_rates * dt
     drone.vel[:] = drone.vel + acc * dt
     drone.ang_vel[:] = R.from_euler("xyz", drone.rpy).apply(rpy_rates)
+
+    # debug model offset
+    print(f"system dynamics: {acc}")
+    from numpy import sin, cos, tan
+
+    r, p, y = drone.rpy
+    acc_x = (SYS_ID_PARAMS.acc_k1 * collective_thrust + SYS_ID_PARAMS.acc_k2) * (
+        cos(r) * sin(p) * cos(y) + sin(r) * sin(y)
+    )
+    acc_y = (SYS_ID_PARAMS.acc_k1 * collective_thrust + SYS_ID_PARAMS.acc_k2) * (
+        cos(r) * sin(p) * sin(y) - sin(r) * cos(y)
+    )
+    acc_z = (
+        (SYS_ID_PARAMS.acc_k1 * collective_thrust + SYS_ID_PARAMS.acc_k2) * cos(r) * cos(p)
+        - GRAVITY,
+    )
+    print(f"my dynamics: {acc_x, acc_y, acc_z}")
+
     return []
 
 

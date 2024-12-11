@@ -7,6 +7,7 @@ import inspect
 import logging
 import sys
 from typing import TYPE_CHECKING, Type
+import pybullet as p
 
 import numpy as np
 import toml
@@ -128,5 +129,56 @@ def check_gate_pass(
         z_intersect = alpha * (pos_local[2]) + (1 - alpha) * last_pos_local[2]
         # Divide gate size by 2 to get the distance from the center to the edges
         if abs(x_intersect) < gate_size[0] / 2 and abs(z_intersect) < gate_size[1] / 2:
+            print(f"Drone successfully passed goal with distance {x_intersect, z_intersect}")
             return True
+        print(f"Drone missed gate with distance {x_intersect, z_intersect}")
     return False
+
+
+def draw_trajectory(
+    initial_info: dict,
+    waypoints: np.ndarray,
+    ref_x: np.ndarray,
+    ref_y: np.ndarray,
+    ref_z: np.ndarray,
+    num_plot_points: int = 50,
+    color=(1, 0, 0, 1),
+):
+    """Draw a trajectory in PyBullet's GUI."""
+    for point in waypoints:
+        sphere_pos = point
+        visual_shape_id = p.createVisualShape(shapeType=p.GEOM_SPHERE, radius=0.05, rgbaColor=color)
+        p.createMultiBody(baseMass=0, baseVisualShapeIndex=visual_shape_id, basePosition=sphere_pos)
+
+    step = max(int(ref_x.shape[0] / num_plot_points), 1)
+    for i in range(step, ref_x.shape[0], step):
+        p.addUserDebugLine(
+            lineFromXYZ=[ref_x[i - step], ref_y[i - step], ref_z[i - step]],
+            lineToXYZ=[ref_x[i], ref_y[i], ref_z[i]],
+            lineWidth=5,
+            lineColorRGB=color[:3],
+            # physicsClientId=initial_info["pyb_client"],
+        )
+    p.addUserDebugLine(
+        lineFromXYZ=[ref_x[i], ref_y[i], ref_z[i]],
+        lineToXYZ=[ref_x[-1], ref_y[-1], ref_z[-1]],
+        lineWidth=5,
+        lineColorRGB=color[:3],
+        # physicsClientId=initial_info["pyb_client"],
+    )
+
+
+def draw_segment_of_traj(
+    initial_info: dict, start_point, end_point, color=(1, 0, 0, 1), lineWidth=5, lifeTime=0
+):
+    """Draw line between two points using PyBullet."""
+
+    p.addUserDebugLine(
+        lineFromXYZ=start_point,
+        lineToXYZ=end_point,
+        lineWidth=lineWidth,
+        lineColorRGB=color[:3],
+        lifeTime=lifeTime,
+        # physicsClientId=initial_info["pyb_client"],
+    )
+    return

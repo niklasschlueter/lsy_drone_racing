@@ -40,6 +40,10 @@ from lsy_drone_racing.sim.physics import PhysicsMode
 from lsy_drone_racing.sim.sim import Sim
 from lsy_drone_racing.utils import check_gate_pass
 
+from lsy_drone_racing.utils.data_logging import DataLogger
+
+import time
+
 if TYPE_CHECKING:
     from numpy.typing import NDArray
 
@@ -125,6 +129,9 @@ class DroneRacingEnv(gymnasium.Env):
         self._steps = 0
         self._last_drone_pos = np.zeros(3)
 
+        self.data_logger = DataLogger("data/last_run_sim.csv", "full")
+        self.start_time = time.perf_counter()
+
     def reset(
         self, *, seed: int | None = None, options: dict | None = None
     ) -> tuple[dict[str, NDArray[np.floating]], dict]:
@@ -155,6 +162,7 @@ class DroneRacingEnv(gymnasium.Env):
         info["low_level_ctrl_freq"] = self.config.sim.ctrl_freq
         info["drone_mass"] = self.sim.drone.nominal_params.mass
         info["env_freq"] = self.config.env.freq
+        info["sim"] = True
         return self.obs, info
 
     def step(
@@ -178,6 +186,7 @@ class DroneRacingEnv(gymnasium.Env):
         self.sim.drone.full_state_cmd(pos, vel, acc, yaw, rpy_rate)
         collision = self._inner_step_loop()
         terminated = self.terminated or collision
+        self.data_logger.log_data(self.obs, action)
         return self.obs, self.reward, terminated, False, self.info
 
     def _inner_step_loop(self) -> bool:
@@ -360,6 +369,7 @@ class DroneRacingThrustEnv(DroneRacingEnv):
         super().__init__(config)
         bounds = np.array([1, np.pi, np.pi, np.pi], dtype=np.float32)
         self.action_space = spaces.Box(low=-bounds, high=bounds)
+        self.data_logger = DataLogger("data/last_run_sim.csv", "attitude")
 
     def step(
         self, action: NDArray[np.floating]
@@ -390,4 +400,5 @@ class DroneRacingThrustEnv(DroneRacingEnv):
             self.sim.drone.collective_thrust_cmd(cmd_thrust, cmd_rpy)
             collision = self._inner_step_loop()
         terminated = self.terminated or collision
+        self.data_logger.log_data(self.obs, action)
         return self.obs, self.reward, terminated, False, self.info

@@ -4,16 +4,16 @@
 # | :-----------------: | :-----------------------: | :-------------------------: | :--------------------: | :---------------: |
 # | `level3.toml`       | **Yes**                   | **Yes**                     | **Yes**                | Robustness        |
 [controller]
-file = "trajectory_controller.py" # Put your controller file name here. Specifying a controller as argument to scripts will override this setting. Controllers are located in `lsy_drone_racing/control/`
+file = "thrust_controller.py" # Put your controller file name here. Specifying a controller as argument to scripts will override this setting. Controllers are located in `lsy_drone_racing/control/`
 
 [deploy]
 ### Settings only relevant for deployment
 # Whether to check if gate and obstacle positions observed by vicon are within the limits defined down below.
-check_race_track = true
+check_race_track = false
 # Whether to check if the drone start position is within the limits specified down below.
-check_drone_start_pos = true
+check_drone_start_pos = false
 # Lets you practice your controller without putting up gates & obstacles, assumes nominal positions given below.
-practice_without_track_objects = false
+practice_without_track_objects = true
 
 [sim]
 # Physics options:
@@ -23,7 +23,7 @@ practice_without_track_objects = false
 # "pyb_drag": PyBullet with drag
 # "pyb_dw": PyBullet with downwash
 # "pyb_gnd_drag_dw": PyBullet with ground effect, drag, and downwash.
-physics = "pyb"
+physics = "sys_id"
 camera_view = [5.0, -40.0, -40.0, 0.5, -1.0, 0.5]
 sim_freq = 500                                    # Simulation frequency, in Hz
 ctrl_freq = 500                                   # Controller frequency, in Hz. This frequency is used to simulate the onboard controller, NOT for the environment's step function
@@ -39,12 +39,12 @@ low = [-0.1, -0.1, -0.1]
 high = [0.1, 0.1, 0.1]
 
 [env]
-id = "DroneRacing-v0" # Either "DroneRacing-v0" or "DroneRacingThrust-v0". If using "DroneRacingThrust-v0", the drone will use the thrust controller instead of the position controller.
-reseed = false        # Whether to re-seed the random number generator between episodes
-seed = 1337           # Random seed
-freq = 60             # Frequency of the environment's step function, in Hz
-symbolic = false      # Whether to include symbolic expressions in the info dict. Note: This can interfere with multiprocessing! If you want to parallelize your training, set this to false.
-sensor_range = 0.45   # Range at which the exact location of gates and obstacles become visible to the drone. Objects that are not in the drone's sensor range report their nominal position.
+id = "DroneRacingThrust-v0" # Either "DroneRacing-v0" or "DroneRacingThrust-v0". If using "DroneRacingThrust-v0", the drone will use the thrust controller instead of the position controller.
+reseed = false              # Whether to re-seed the random number generator between episodes
+seed = 1337                 # Random seed
+freq = 60                   # Frequency of the environment's step function, in Hz
+symbolic = false            # Whether to include symbolic expressions in the info dict. Note: This can interfere with multiprocessing! If you want to parallelize your training, set this to false.
+sensor_range = 0.45         # Range at which the exact location of gates and obstacles become visible to the drone. Objects that are not in the drone's sensor range report their nominal position.
 
 [env.track]
 # Tall gates: 1.0m height. Short gates: 0.525m height. Height is measured from the ground to the

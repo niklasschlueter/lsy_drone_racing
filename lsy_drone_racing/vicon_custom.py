@@ -14,10 +14,13 @@ elements.
 from __future__ import annotations
 
 import time
+import logging
 
 import numpy as np
 import rospy
 import yaml
+
+# from crazyswarm.msg import StateVector
 from vicon_bridge.msg import StateVector
 from rosgraph import Master
 from scipy.spatial.transform import Rotation as R
@@ -25,12 +28,12 @@ from tf2_msgs.msg import TFMessage
 from geometry_msgs.msg import TransformStamped
 from std_srvs.srv import Empty
 
-from munch import Munch
+from import_utils import get_ros_package_path
 
-from lsy_drone_racing.utils.import_utils import get_ros_package_path
+# logger = logging.getLogger("rosout." + __name__)
 
 
-class Vicon:
+class ViconCustom:
     """Vicon interface for the pose estimation data for the drone and any other tracked objects.
 
     Vicon sends a stream of ROS messages containing the current pose data. We subscribe to these
@@ -39,7 +42,12 @@ class Vicon:
     """
 
     def __init__(
-        self, track_names: list[str] = [], auto_track_drone: bool = True, timeout: float = 0.0
+        self,
+        drone_names,
+        track_names: list[str] = [],
+        useKalman=False,
+        # auto_track_drone: bool = True,
+        timeout: float = 0.0,
     ):
         """Load the crazyflies.yaml file and register the subscribers for the Vicon pose data.
 
@@ -51,19 +59,13 @@ class Vicon:
         """
         assert Master("/rosnode").is_online(), "ROS is not running. Please run hover.launch first!"
         try:
-            rospy.init_node("playback_node")
+            rospy.init_node(f"drone_racing_vicon_listener")
         except rospy.exceptions.ROSException:
             ...  # ROS node is already running which is fine for us
-        self.drone_name = None
-        self.auto_track_drone = auto_track_drone
-        if auto_track_drone:
-            with open(get_ros_package_path("crazyswarm") / "launch/crazyflies.yaml", "r") as f:
-                config = yaml.load(f, yaml.SafeLoader)
-            assert len(config["crazyflies"]) == 1, "Only one crazyfly allowed at a time!"
-            self.drone_name = f"cf{config['crazyflies'][0]['id']}"
-            print(f"self.drone_name: {self.drone_name}")
+        print(f"initalizing vicon listener for drone names: {drone_names}")
+        self.drone_names = drone_names
         self.track_names = track_names
-
+        self.useKalman = useKalman
         # Register the Vicon subscribers for the drone and any other tracked object
         self.pos: dict[str, np.ndarray] = {}
         self.rpy: dict[str, np.ndarray] = {}
@@ -74,38 +76,45 @@ class Vicon:
         self.pos_raw: dict[str, np.ndarray] = {}
         self.rpy_raw: dict[str, np.ndarray] = {}
 
-        from std_srvs.srv import Empty
+        self.estimator_callback_counter = 0
 
         self.tf_sub = rospy.Subscriber("/tf", TFMessage, self.tf_callback)
-        if auto_track_drone:
-            self.estimator_sub = rospy.Subscriber(
-                "/estimated_state_" + self.drone_name,
-                StateVector,
-                self.estimator_callback,
-                # "/estimated_state", StateVector, self.estimator_callback
-            )
-            print(f'subsciribng to: {"/estimated_state_" + self.drone_name}')
 
-            self.raw_vicon_data_sub = rospy.Subscriber(
-                f"/vicon/{self.drone_name}/{self.drone_name}",
-                TransformStamped,
-                self.raw_vicon_callback,
-            )
+        self.estimator_subs = []
+        self.raw_vicon_data_subs = []
+        for drone_name in drone_names:
+            self.estimator_subs += [
+                rospy.Subscriber(
+                    f"/estimated_state_{drone_name}",
+                    StateVector,
+                    self.estimator_callback,
+                    drone_name,
+                )
+            ]
 
-        ### Kalman Estimator things.
-        ## TODO: Call service once: _flip_flag_for_outlier_test
-        # outlier_test_service_name = self.drone_name + "_flip_flag_for_outlier_test"
+            self.raw_vicon_data_subs += [
+                rospy.Subscriber(
+                    f"/vicon/{drone_name}/{drone_name}",
+                    TransformStamped,
+                    self.raw_vicon_callback,
+                    drone_name,
+                )
+            ]
 
-        #### Wait for the service to be available
-        # print(f"Waiting for service {outlier_test_service_name}")
-        # rospy.wait_for_service(outlier_test_service_name)
+        # if useKalman:
+        #    ### Kalman Estimator things.
+        #    # TODO: Call service once: _flip_flag_for_outlier_test
+        #    outlier_test_service_name = self.drone_name + "_flip_flag_for_outlier_test"
 
-        #### Create a service proxy
-        # flip_flag = rospy.ServiceProxy(outlier_test_service_name, Empty)
+        #    # Wait for the service to be available
+        #    rospy.wait_for_service(outlier_test_service_name)
 
-        #### Call the service at the start
-        # rospy.loginfo("Calling flip flag service at start.")
-        # flip_flag()
+        #    # Create a service proxy
+        #    flip_flag = rospy.ServiceProxy(outlier_test_service_name, Empty)
+
+        #    # Call the service at the start
+        #    rospy.loginfo("Calling flip flag service at start.")
+        #    flip_flag()
 
         if timeout:
             tstart = time.time()
@@ -114,25 +123,34 @@ class Vicon:
             if not self.active:
                 raise TimeoutError(
                     "Timeout while fetching initial position updates for all tracked objects. "
-                    f"Missing objects: {[k for k in self.track_names if k not in self.pos]}"
+                    f"Missing objects: {[k for k in self.track_names if k not in self.ang_vel]}"
                 )
+        time.sleep(0.1)
 
-    def estimator_callback(self, data: StateVector):
+    def estimator_callback(self, data: StateVector, drone_name):
         """Save the drone state from the estimator node.
 
         Args:
             data: The StateVector message.
         """
-        if self.drone_name is None:
-            return
-        self.pos[self.drone_name] = np.array(data.pos)
-        # rpy = R.from_quat(data.quat).as_euler("xyz")
-        rpy = data.euler
-        self.rpy[self.drone_name] = np.array(rpy)
-        self.vel[self.drone_name] = np.array(data.vel)
-        self.ang_vel[self.drone_name] = np.array(data.omega_b)
+        self.pos[drone_name] = np.array(data.pos)
 
-    def raw_vicon_callback(self, data: TFMessage):
+        # Depending on whether we use the Kalman Filter or not,
+        # we either get the rpy values from the quaternion or not.
+        # TODO: Fix
+        if self.useKalman:
+            rpy = data.euler  # for kalman filter!
+        else:
+            rpy = R.from_quat(data.quat).as_euler("xyz")
+
+        self.rpy[drone_name] = np.array(rpy)
+        self.vel[drone_name] = np.array(data.vel)
+        self.ang_vel[drone_name] = np.array(data.omega_b)
+
+        # logger.info(f"Currently in process {mp.current_process()}, pos {self.pos}")
+        self.estimator_callback_counter += 1
+
+    def raw_vicon_callback(self, data: TFMessage, drone_name):
         """Save the position and orientation of all transforms.
 
         Args:
@@ -144,8 +162,8 @@ class Vicon:
         pos = np.array([T.x, T.y, T.z])
         rpy = R.from_quat([Rot.x, Rot.y, Rot.z, Rot.w]).as_euler("xyz")
         # self.time[name] = time.time()
-        self.pos_raw[self.drone_name] = pos
-        self.rpy_raw[self.drone_name] = rpy
+        self.pos_raw[drone_name] = pos
+        self.rpy_raw[drone_name] = rpy
 
     def tf_callback(self, data: TFMessage):
         """Save the position and orientation of all transforms.
@@ -156,7 +174,7 @@ class Vicon:
         for tf in data.transforms:
             name = tf.child_frame_id.split("/")[-1]
             # Skip drone if it is also in track names, handled by the estimator_callback
-            if name == self.drone_name:
+            if name in self.drone_names:
                 continue
             if name not in self.track_names:
                 continue
@@ -192,13 +210,13 @@ class Vicon:
     def active(self) -> bool:
         """Check if Vicon has sent data for each object."""
         # Check if drone is being tracked and if drone has already received updates
-        if self.drone_name is not None and self.drone_name not in self.pos:
-            return False
+        for drone_name in self.drone_names:
+            if drone_name not in self.pos:
+                return False
         # Check remaining object's update status
         return all([name in self.pos for name in self.track_names])
 
     def close(self):
         """Unregister the ROS subscribers."""
         self.tf_sub.unregister()
-        if self.auto_track_drone:
-            self.estimator_sub.unregister()
+        self.estimator_sub.unregister()

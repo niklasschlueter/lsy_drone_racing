@@ -81,6 +81,7 @@ def simulate(
                 gui_timer = update_gui_timer(curr_time, env.unwrapped.sim.pyb_client, gui_timer)
 
             action = controller.compute_control(obs, info)
+            env.start_time = t_start
             obs, reward, terminated, truncated, info = env.step(action)
             done = terminated or truncated
             # Update the controller internal state and models.

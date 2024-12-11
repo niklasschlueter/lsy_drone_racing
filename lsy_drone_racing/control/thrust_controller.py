@@ -17,6 +17,7 @@ import numpy as np
 import pybullet as p
 from scipy.interpolate import CubicSpline
 from scipy.spatial.transform import Rotation as R
+from queue import Queue
 
 from lsy_drone_racing.control import BaseController
 
@@ -48,6 +49,12 @@ class ThrustController(BaseController):
         self.i_error = np.zeros(3)
         self.g = 9.81
         self._tick = 0
+        # Quick hack to simulate delay - delay_steps of zero are equal to no delay.
+        delay_steps = 0
+        self.action_q = Queue()
+        # input empty actions
+        for i in range(delay_steps):
+            self.action_q.put(np.array([0.2, 0, 0, 0]))
 
         # Same waypoints as in the trajectory controller. Determined by trial and error.
         waypoints = np.array(
@@ -70,7 +77,7 @@ class ThrustController(BaseController):
         cs_y = CubicSpline(ts, waypoints[:, 1])
         cs_z = CubicSpline(ts, waypoints[:, 2])
 
-        des_completion_time = 15
+        des_completion_time = 10.5
         ts = np.linspace(0, 1, int(initial_info["env_freq"] * des_completion_time))
 
         self.x_des = cs_x(ts)
@@ -127,6 +134,8 @@ class ThrustController(BaseController):
         # target_thrust += params.quad.m * desired_acc
         target_thrust[2] += self.drone_mass * self.g
 
+        # TODO:delete
+        # obs["rpy"] = np.array([obs["rpy"][2], obs["rpy"][1], 0.0])
         # Update z_axis to the current orientation of the drone
         z_axis = R.from_euler("xyz", obs["rpy"]).as_matrix()[:, 2]
 
@@ -144,8 +153,12 @@ class ThrustController(BaseController):
 
         R_desired = np.vstack([x_axis_desired, y_axis_desired, z_axis_desired]).T
         euler_desired = R.from_matrix(R_desired).as_euler("xyz", degrees=False)
-        thrust_desired, euler_desired
-        return np.concatenate([[thrust_desired], euler_desired])
+        action = np.concatenate([[thrust_desired], euler_desired])
+
+        # simulate delay
+        self.action_q.put(action)
+        action = self.action_q.get()
+        return action
 
     def step_callback(
         self,

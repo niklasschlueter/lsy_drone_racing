@@ -238,7 +238,9 @@ class Drone:
             rpy: [roll, pitch, yaw] orientation of the Crazyflie in radians.
         """
         # All choices were made with respect to src/mod/src/crtp_commander_rpyt.c in the firmware.
-        pwms = self._thrust_to_pwms(thrust)
+        # pwms = thrust
+        pwms = self._thrust_to_pwms(thrust)  # TODO: Uncomment!
+        print(f"applid pwms in dron function: {pwms}")
         timestep = self._tick / self.params.firmware_freq
         pycffirmware.crtpCommanderHighLevelStop()  # Resets planner object
         pycffirmware.crtpCommanderHighLevelUpdateTime(timestep)
