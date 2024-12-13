@@ -240,7 +240,7 @@ class Drone:
         # All choices were made with respect to src/mod/src/crtp_commander_rpyt.c in the firmware.
         # pwms = thrust
         pwms = self._thrust_to_pwms(thrust)  # TODO: Uncomment!
-        print(f"applid pwms in dron function: {pwms}")
+        #print(f"applid pwms in dron function: {pwms}")
         timestep = self._tick / self.params.firmware_freq
         pycffirmware.crtpCommanderHighLevelStop()  # Resets planner object
         pycffirmware.crtpCommanderHighLevelUpdateTime(timestep)

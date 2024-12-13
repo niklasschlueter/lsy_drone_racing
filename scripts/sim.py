@@ -59,7 +59,9 @@ def simulate(
         config.sim.gui = gui
     # Load the controller module
     control_path = Path(__file__).parents[1] / "lsy_drone_racing/control"
+    print(f"controller argument: {controller}")
     controller_path = control_path / (controller or config.controller.file)
+    print(f"using controller path: {controller_path}")
     controller_cls = load_controller(controller_path)  # This returns a class, not an instance
     # Create the racing environment
     env: DroneRacingEnv = gymnasium.make(env_id or config.env.id, config=config)
