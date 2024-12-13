@@ -26,7 +26,9 @@ practice_without_track_objects = false
 # "pyb_dw": PyBullet with downwash
 # "pyb_gnd_drag_dw": PyBullet with ground effect, drag, and downwash.
 # "sys_id": System identification model. Only supported for attitude control interface (DroneRacingThrust-v0)
-physics = "pyb" #sys_id"
+physics = "sys_id"
+
+no_drones = 2
 
 camera_view = [5.0, -40.0, -40.0, 0.5, -1.0, 0.5]
 sim_freq = 500                                    # Simulation frequency, in Hz
@@ -96,8 +98,13 @@ pos = [0.0, 1.0, 1.4]
 #[[env.track.obstacles]]
 #pos = [2.1, -0.8, 1.4]
 
-[env.track.drone]
+[[env.track.drones]]
 pos = [0.9, 0.9, 0.05]
+rpy = [0.0, 0.0, 0.0]
+vel = [0, 0, 0]
+ang_vel = [0, 0, 0]
+[[env.track.drones]]
+pos = [1.1, 1.1, 0.05]
 rpy = [0.0, 0.0, 0.0]
 vel = [0, 0, 0]
 ang_vel = [0, 0, 0]

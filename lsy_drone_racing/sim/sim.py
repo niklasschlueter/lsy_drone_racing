@@ -88,8 +88,10 @@ class Sim:
                 PhysicsMode enum.
         """
         self.np_random = np.random.default_rng()
-        assert n_drones == 1, "Only one drone is supported at the moment."
-        self.drone = Drone(controller="mellinger")
+        # assert n_drones == 1, "Only one drone is supported at the moment."
+        self.drones = [Drone(controller="mellinger") for i in range(n_drones)]
+        # self.drone = Drone(controller="mellinger")
+
         self.n_drones = n_drones
         self.pyb_client = p.connect(p.GUI if gui else p.DIRECT)
         self.settings = SimSettings(sim_freq, ctrl_freq, gui, pybullet_id=self.pyb_client)
@@ -97,7 +99,7 @@ class Sim:
 
         # Create the state and action spaces of the simulation. Note that the state space is
         # different from the observation space of any derived environment.
-        min_thrust, max_thrust = self.drone.params.min_thrust, self.drone.params.max_thrust
+        min_thrust, max_thrust = self.drones[0].params.min_thrust, self.drones[0].params.max_thrust
         self.action_space = spaces.Box(low=min_thrust, high=max_thrust, shape=(4,))
         # pos in meters, rpy in radians, vel in m/s ang_vel in rad/s
         rpy_max = np.array([85 / 180 * np.pi, 85 / 180 * np.pi, np.pi], np.float32)  # Yaw unbounded
@@ -122,10 +124,15 @@ class Sim:
                 physicsClientId=self.pyb_client,
             )
 
-        assert isinstance(track.drone, dict), "Expected drone state as dictionary."
-        for key, val in track.drone.items():
-            assert hasattr(self.drone, "init_" + key), f"Unknown key '{key}' in drone init state."
-            setattr(self.drone, "init_" + key, np.array(val, dtype=float))
+        # Transfering config drone information into drone class instance
+        for i, track_drone in enumerate(track.get("drones")):
+            print(f"type: {type(track_drone)}")
+            assert isinstance(track_drone, dict), "Expected drone state as dictionary."
+            for key, val in track_drone.items():
+                assert hasattr(
+                    self.drones[i], "init_" + key
+                ), f"Unknown key '{key}' in drone init state."
+                setattr(self.drones[i], "init_" + key, np.array(val, dtype=float))
 
         self.pyb_objects = {}  # Populated when objects are loaded into PyBullet.
 
@@ -146,26 +153,27 @@ class Sim:
 
         self._setup_pybullet()
 
-    def step(self, desired_thrust: NDArray[np.floating]):
+    def step(self, drone, desired_thrust: NDArray[np.floating]):
         """Advance the environment by one control step.
 
         Args:
             desired_thrust: The desired thrust for the drone.
         """
-        self.drone.desired_thrust[:] = desired_thrust
+        # for drone in self.drones:
+        drone.desired_thrust[:] = desired_thrust
         rpm = self._thrust_to_rpm(desired_thrust)  # Pre-process/clip the action
         disturb_force = np.zeros(3)
         if "dynamics" in self.disturbances:
             disturb_force = self.disturbances["dynamics"].apply(disturb_force)
         for _ in range(self.settings.sim_freq // self.settings.ctrl_freq):
-            self.drone.rpm[:] = rpm  # Save the last applied action (e.g. to compute drag)
+            drone.rpm[:] = rpm  # Save the last applied action (e.g. to compute drag)
             dt = 1 / self.settings.sim_freq
-            ft = force_torques(self.drone, rpm, self.physics_mode, dt, self.pyb_client)
-            apply_force_torques(self.pyb_client, self.drone, ft, disturb_force)
-            pybullet_step(self.pyb_client, self.drone, self.physics_mode)
-            self._sync_pyb_to_sim()
+            ft = force_torques(drone, rpm, self.physics_mode, dt, self.pyb_client)
+            apply_force_torques(self.pyb_client, drone, ft, disturb_force)
+            pybullet_step(self.pyb_client, drone, self.physics_mode)
+        self._sync_pyb_to_sim(drone)
 
-    def step_sys_id(self, collective_thrust: float, rpy: NDArray[np.floating], dt: float):
+    def step_sys_id(self, drone, collective_thrust: float, rpy: NDArray[np.floating], dt: float):
         """Step the simulation with a system identification dynamics model.
 
         The signature of this function is different from step(), since we do not pass desired
@@ -182,9 +190,10 @@ class Sim:
             The deviation of step_sys_id() from step() is not ideal. We should aim for a unified
             step function for all physics modes in the future.
         """
-        sys_id_dynamics(self.drone, collective_thrust, rpy, dt)
-        pybullet_step(self.pyb_client, self.drone, self.physics_mode)
-        self._sync_pyb_to_sim()
+        # for drone in self.drones:
+        sys_id_dynamics(drone, collective_thrust, rpy, dt)
+        pybullet_step(self.pyb_client, drone, self.physics_mode)
+        self._sync_pyb_to_sim(drone)
 
     def reset(self):
         """Reset the simulation to its original state."""
@@ -192,17 +201,19 @@ class Sim:
             self.disturbances[mode].reset()
         self._randomize_gates()
         self._randomize_obstacles()
-        self._randomize_drone()
-        self._sync_pyb_to_sim()
-        self.drone.reset()
+        for drone in self.drones:
+            drone.reset()
+            self._randomize_drone(drone)
+            self._sync_pyb_to_sim(drone)
 
     @property
     def collisions(self) -> list[int]:
         """Return the pybullet object IDs of the objects currently in collision with the drone."""
         collisions = []
-        for o_id in self.pyb_objects.values():
-            if p.getContactPoints(bodyA=o_id, bodyB=self.drone.id, physicsClientId=self.pyb_client):
-                collisions.append(o_id)
+        for drone in self.drones:
+            for o_id in self.pyb_objects.values():
+                if p.getContactPoints(bodyA=o_id, bodyB=drone.id, physicsClientId=self.pyb_client):
+                    collisions.append(o_id)
         return collisions
 
     def in_range(self, bodies: dict, target_body: Drone, distance: float) -> NDArray[np.bool_]:
@@ -262,15 +273,17 @@ class Sim:
         # Load the ground plane, drone, gates and obstacles models.
         plane_id = p.loadURDF("plane.urdf", [0, 0, 0], physicsClientId=self.pyb_client)
         self.pyb_objects["plane"] = plane_id
-        self.drone.id = p.loadURDF(
-            str(self.URDF_DIR / "cf2x.urdf"),
-            self.drone.init_pos,
-            p.getQuaternionFromEuler(self.drone.init_rpy),
-            flags=p.URDF_USE_INERTIA_FROM_FILE,  # Use URDF inertia tensor.
-            physicsClientId=self.pyb_client,
-        )
-        # Remove default damping.
-        p.changeDynamics(self.drone.id, -1, linearDamping=0, angularDamping=0)
+        for drone in self.drones:
+            drone.id = p.loadURDF(
+                str(self.URDF_DIR / "cf2x.urdf"),
+                drone.init_pos,
+                p.getQuaternionFromEuler(drone.init_rpy),
+                flags=p.URDF_USE_INERTIA_FROM_FILE,  # Use URDF inertia tensor.
+                physicsClientId=self.pyb_client,
+            )
+            # Remove default damping.
+            p.changeDynamics(drone.id, -1, linearDamping=0, angularDamping=0)
+            self._sync_pyb_to_sim(drone)
 
         # Load the gates.
         for i, gate in self.gates.items():
@@ -290,8 +303,6 @@ class Sim:
                 self.URDF_DIR / "obstacle.urdf", self.obstacles[i]["pos"], marker=str(i)
             )
             self.pyb_objects[f"obstacle_{i}"] = self.obstacles[i]["id"]
-
-        self._sync_pyb_to_sim()
 
     def _setup_disturbances(self, disturbances: dict | None = None) -> dict[str, NoiseList]:
         """Creates attributes and action spaces for the disturbances.
@@ -380,58 +391,59 @@ class Sim:
             )
         return pyb_id
 
-    def _randomize_drone(self):
+    def _randomize_drone(self, drone):
         """Randomize the drone's position, orientation and physical properties."""
-        inertia_diag = self.drone.nominal_params.J.diagonal()
+        inertia_diag = drone.nominal_params.J.diagonal()
         if drone_inertia := self.randomization.get("drone_inertia"):
             distrib = getattr(self.np_random, drone_inertia.type)
             kwargs = {k: v for k, v in drone_inertia.items() if k != "type"}
             inertia_diag = inertia_diag + distrib(**kwargs)
             assert all(inertia_diag > 0), "Negative randomized inertial properties."
-        self.drone.params.J = np.diag(inertia_diag)
+        drone.params.J = np.diag(inertia_diag)
 
-        mass = self.drone.nominal_params.mass
+        mass = drone.nominal_params.mass
         if drone_mass := self.randomization.get("drone_mass"):
             distrib = getattr(self.np_random, drone_mass.type)
             mass += distrib(**{k: v for k, v in drone_mass.items() if k != "type"})
             assert mass > 0, "Negative randomized mass."
-        self.drone.params.mass = mass
+        drone.params.mass = mass
 
         p.changeDynamics(
-            self.drone.id,
+            drone.id,
             linkIndex=-1,  # Base link.
             mass=mass,
             localInertiaDiagonal=inertia_diag,
             physicsClientId=self.pyb_client,
         )
 
-        pos = self.drone.init_pos.copy()
+        pos = drone.init_pos.copy()
         if drone_pos := self.randomization.get("drone_pos"):
             distrib = getattr(self.np_random, drone_pos.type)
             pos += distrib(**{k: v for k, v in drone_pos.items() if k != "type"})
 
-        rpy = self.drone.init_rpy.copy()
+        rpy = drone.init_rpy.copy()
         if drone_rpy := self.randomization.get("drone_rpy"):
             distrib = getattr(self.np_random, drone_rpy.type)
             kwargs = {k: v for k, v in drone_rpy.items() if k != "type"}
             rpy = np.clip(rpy + distrib(**kwargs), -np.pi, np.pi)
 
         p.resetBasePositionAndOrientation(
-            self.drone.id, pos, p.getQuaternionFromEuler(rpy), physicsClientId=self.pyb_client
+            drone.id, pos, p.getQuaternionFromEuler(rpy), physicsClientId=self.pyb_client
         )
-        p.resetBaseVelocity(self.drone.id, [0, 0, 0], [0, 0, 0], physicsClientId=self.pyb_client)
+        p.resetBaseVelocity(drone.id, [0, 0, 0], [0, 0, 0], physicsClientId=self.pyb_client)
 
-    def _sync_pyb_to_sim(self):
+    def _sync_pyb_to_sim(self, drone):
         """Read state values from PyBullet and synchronize the drone buffers with it.
 
         We cache the state values in the drone class to avoid calling PyBullet too frequently.
         """
-        pos, quat = p.getBasePositionAndOrientation(self.drone.id, physicsClientId=self.pyb_client)
-        self.drone.pos[:] = np.array(pos, float)
-        self.drone.rpy[:] = np.array(p.getEulerFromQuaternion(quat), float)
-        vel, ang_vel = p.getBaseVelocity(self.drone.id, physicsClientId=self.pyb_client)
-        self.drone.vel[:] = np.array(vel, float)
-        self.drone.ang_vel[:] = np.array(ang_vel)
+        # for drone in self.drones:
+        pos, quat = p.getBasePositionAndOrientation(drone.id, physicsClientId=self.pyb_client)
+        drone.pos[:] = np.array(pos, float)
+        drone.rpy[:] = np.array(p.getEulerFromQuaternion(quat), float)
+        vel, ang_vel = p.getBaseVelocity(drone.id, physicsClientId=self.pyb_client)
+        drone.vel[:] = np.array(vel, float)
+        drone.ang_vel[:] = np.array(ang_vel)
 
     def symbolic(self) -> SymbolicModel:
         """Create a symbolic (CasADi) model for dynamics, observation, and cost.
@@ -439,7 +451,8 @@ class Sim:
         Returns:
             CasADi symbolic model of the environment.
         """
-        return symbolic(self.drone, 1 / self.settings.sim_freq)
+        # return symbolic(self.drone, 1 / self.settings.sim_freq)
+        return
 
     def _thrust_to_rpm(self, thrust: NDArray[np.floating]) -> NDArray[np.floating]:
         """Convert the desired_thrust into motor RPMs.
