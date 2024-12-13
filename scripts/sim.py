@@ -73,7 +73,10 @@ def simulate(
     for _ in range(n_runs):  # Run n_runs episodes with the controller
         done = False
         obs, info = env.reset()
-        controller: BaseController = controller_cls(obs, info)
+        
+        controllers = []
+        for i in range(no_drones):
+            controllers += [controller_cls(obs[i], info)]
         if gui:
             gui_timer = update_gui_timer(0.0, env.unwrapped.sim.pyb_client, gui_timer)
         i = 0
@@ -86,15 +89,16 @@ def simulate(
 
             actions = np.zeros((4, no_drones))
             for i in range(no_drones):
-                action = controller.compute_control(obs[i], info)
+                action = controllers[i].compute_control(obs[i], info)
                 actions[:, i] = action
 
             env.start_time = t_start
             obs, reward, terminated, truncated, info = env.step(actions)
             done = terminated or truncated
-            # Update the controller internal state and models.
-            # controller.step_callback(action, obs, reward, terminated, truncated, info)
-            # Add up reward, collisions
+            for i in range(no_drones):
+                # Update the controller internal state and models.
+                controllers[i].step_callback(action, obs, reward, terminated, truncated, info)
+                # Add up reward, collisions
 
             # Synchronize the GUI.
             if config.sim.gui:
@@ -102,9 +106,10 @@ def simulate(
                     time.sleep(1 / config.env.freq - elapsed)
             i += 1
 
-        controller.episode_callback()  # Update the controller internal state and models.
+        for i in range(no_drones):
+            controllers[i].episode_callback()  # Update the controller internal state and models.
+            controllers[i].episode_reset()
         log_episode_stats(obs, info, config, curr_time)
-        controller.episode_reset()
         ep_times.append(curr_time if obs["target_gate"] == -1 else None)
 
     # Close the environment
