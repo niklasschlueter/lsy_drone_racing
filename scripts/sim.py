@@ -13,6 +13,7 @@ import logging
 import time
 from pathlib import Path
 from typing import TYPE_CHECKING
+import numpy as np
 
 import fire
 import gymnasium
@@ -57,6 +58,7 @@ def simulate(
         gui = config.sim.gui
     else:
         config.sim.gui = gui
+    no_drones = config.sim.no_drones
     # Load the controller module
     control_path = Path(__file__).parents[1] / "lsy_drone_racing/control"
     controller_path = control_path / (controller or config.controller.file)
@@ -80,12 +82,16 @@ def simulate(
             if gui:
                 gui_timer = update_gui_timer(curr_time, env.unwrapped.sim.pyb_client, gui_timer)
 
-            action = controller.compute_control(obs, info)
+            actions = np.zeros((4, no_drones))
+            for i in range(no_drones):
+                action = controller.compute_control(obs[i], info)
+                actions[:, i] = action
+
             env.start_time = t_start
-            obs, reward, terminated, truncated, info = env.step(action)
+            obs, reward, terminated, truncated, info = env.step(actions)
             done = terminated or truncated
             # Update the controller internal state and models.
-            controller.step_callback(action, obs, reward, terminated, truncated, info)
+            # controller.step_callback(action, obs, reward, terminated, truncated, info)
             # Add up reward, collisions
 
             # Synchronize the GUI.

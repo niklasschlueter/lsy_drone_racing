@@ -102,9 +102,11 @@ class DroneRacingEnv(gymnasium.Env):
             disturbances=getattr(config.sim, "disturbances", {}),
             randomization=getattr(config.env, "randomization", {}),
             gui=config.sim.gui,
-            n_drones=1,
+            n_drones=config.sim.no_drones,
             physics=config.sim.physics,
         )
+        self.no_drones = config.sim.no_drones
+
         self.sim.seed(config.env.seed)
         self.action_space = spaces.Box(low=-1, high=1, shape=(13,))
         n_gates, n_obstacles = len(self.sim.gates), len(self.sim.obstacles)
@@ -124,10 +126,10 @@ class DroneRacingEnv(gymnasium.Env):
                 ),
             }
         )
-        self.target_gate = 0
-        self.symbolic = self.sim.symbolic() if config.env.symbolic else None
+        self.target_gates = [0] * self.no_drones
+        self.symbolic = None  # self.sim.symbolic() if config.env.symbolic else None
         self._steps = 0
-        self._last_drone_pos = np.zeros(3)
+        self._last_drone_pos = np.zeros((3, self.no_drones))
 
         self.data_logger = DataLogger("data/last_run_sim.csv", "full")
         self.start_time = time.perf_counter()
@@ -151,16 +153,16 @@ class DroneRacingEnv(gymnasium.Env):
         if seed is not None:
             self.sim.seed(seed)
         self.sim.reset()
-        self.target_gate = 0
+        self.target_gates = [0] * self.no_drones
         self._steps = 0
-        self.sim.drone.reset(self.sim.drone.pos, self.sim.drone.rpy, self.sim.drone.vel)
-        self._last_drone_pos[:] = self.sim.drone.pos
-        if self.sim.n_drones > 1:
-            raise NotImplementedError("Firmware wrapper does not support multiple drones.")
+        # self.sim.drone.reset(self.sim.drone.pos, self.sim.drone.rpy, self.sim.drone.vel)
+        # self._last_drone_pos[:] = self.sim.drone.pos
+        # if self.sim.n_drones > 1:
+        # raise NotImplementedError("Firmware wrapper does not support multiple drones.")
         info = self.info
         info["sim_freq"] = self.config.sim.sim_freq
         info["low_level_ctrl_freq"] = self.config.sim.ctrl_freq
-        info["drone_mass"] = self.sim.drone.nominal_params.mass
+        info["drone_mass"] = self.sim.drones[0].nominal_params.mass
         info["env_freq"] = self.config.env.freq
         info["sim"] = True
         return self.obs, info
@@ -199,58 +201,60 @@ class DroneRacingEnv(gymnasium.Env):
         Returns:
             True if a collision occured at any point during the simulation steps, else False.
         """
-        thrust = self.sim.drone.desired_thrust
         collision = False
-        while (
-            self.sim.drone.tick / self.sim.drone.firmware_freq
-            < (self._steps + 1) / self.config.env.freq
-        ):
-            self.sim.step(thrust)
-            self.target_gate += self.gate_passed()
-            if self.target_gate == self.sim.n_gates:
-                self.target_gate = -1
-            collision |= bool(self.sim.collisions)
-            pos, rpy, vel = self.sim.drone.pos, self.sim.drone.rpy, self.sim.drone.vel
-            thrust = self.sim.drone.step_controller(pos, rpy, vel)[::-1]
-        self.sim.drone.desired_thrust[:] = thrust
-        self._last_drone_pos[:] = self.sim.drone.pos
-        self._steps += 1
+        for i, drone in enumerate(self.sim.drones):
+            # thrust = drone.desired_thrust
+            while drone.tick / drone.firmware_freq < (self._steps + 1) / self.config.env.freq:
+                self.sim.step(drone, drone.desired_thrust)
+                self.target_gates[i] += self.gate_passed(i)
+                if self.target_gates[i] == self.sim.n_gates:
+                    self.target_gates[i] = -1
+                collision |= bool(self.sim.collisions)
+                pos, rpy, vel = drone.pos, drone.rpy, drone.vel
+                thrust = drone.step_controller(pos, rpy, vel)[::-1]
+            self.desired_thrust[i, :] = thrust
+            self._last_drone_pos[:, i] = drone.pos
+            drone._steps += 1
         return collision
 
     @property
     def obs(self) -> dict[str, NDArray[np.floating]]:
         """Return the observation of the environment."""
-        obs = {
-            "pos": self.sim.drone.pos.astype(np.float32),
-            "rpy": self.sim.drone.rpy.astype(np.float32),
-            "vel": self.sim.drone.vel.astype(np.float32),
-            "ang_vel": self.sim.drone.ang_vel.astype(np.float32),
-        }
-        obs["ang_vel"][:] = R.from_euler("xyz", obs["rpy"]).apply(obs["ang_vel"], inverse=True)
+        total_obs = []
+        for i in range(self.no_drones):
+            drone = self.sim.drones[i]
+            obs = {
+                "pos": drone.pos.astype(np.float32),
+                "rpy": drone.rpy.astype(np.float32),
+                "vel": drone.vel.astype(np.float32),
+                "ang_vel": drone.ang_vel.astype(np.float32),
+            }
+            obs["ang_vel"][:] = R.from_euler("xyz", obs["rpy"]).apply(obs["ang_vel"], inverse=True)
 
-        gates = self.sim.gates
-        obs["target_gate"] = self.target_gate if self.target_gate < len(gates) else -1
-        # Add the gate and obstacle poses to the info. If gates or obstacles are in sensor range,
-        # use the actual pose, otherwise use the nominal pose.
-        in_range = self.sim.in_range(gates, self.sim.drone, self.config.env.sensor_range)
-        gates_pos = np.stack([g["nominal.pos"] for g in gates.values()])
-        gates_pos[in_range] = np.stack([g["pos"] for g in gates.values()])[in_range]
-        gates_rpy = np.stack([g["nominal.rpy"] for g in gates.values()])
-        gates_rpy[in_range] = np.stack([g["rpy"] for g in gates.values()])[in_range]
-        obs["gates_pos"] = gates_pos.astype(np.float32)
-        obs["gates_rpy"] = gates_rpy.astype(np.float32)
-        obs["gates_in_range"] = in_range
+            gates = self.sim.gates
+            obs["target_gate"] = self.target_gates[i] if self.target_gates[i] < len(gates) else -1
+            # Add the gate and obstacle poses to the info. If gates or obstacles are in sensor range,
+            # use the actual pose, otherwise use the nominal pose.
+            in_range = self.sim.in_range(gates, drone, self.config.env.sensor_range)
+            gates_pos = np.stack([g["nominal.pos"] for g in gates.values()])
+            gates_pos[in_range] = np.stack([g["pos"] for g in gates.values()])[in_range]
+            gates_rpy = np.stack([g["nominal.rpy"] for g in gates.values()])
+            gates_rpy[in_range] = np.stack([g["rpy"] for g in gates.values()])[in_range]
+            obs["gates_pos"] = gates_pos.astype(np.float32)
+            obs["gates_rpy"] = gates_rpy.astype(np.float32)
+            obs["gates_in_range"] = in_range
 
-        obstacles = self.sim.obstacles
-        in_range = self.sim.in_range(obstacles, self.sim.drone, self.config.env.sensor_range)
-        obstacles_pos = np.stack([o["nominal.pos"] for o in obstacles.values()])
-        obstacles_pos[in_range] = np.stack([o["pos"] for o in obstacles.values()])[in_range]
-        obs["obstacles_pos"] = obstacles_pos.astype(np.float32)
-        obs["obstacles_in_range"] = in_range
+            obstacles = self.sim.obstacles
+            in_range = self.sim.in_range(obstacles, drone, self.config.env.sensor_range)
+            obstacles_pos = np.stack([o["nominal.pos"] for o in obstacles.values()])
+            obstacles_pos[in_range] = np.stack([o["pos"] for o in obstacles.values()])[in_range]
+            obs["obstacles_pos"] = obstacles_pos.astype(np.float32)
+            obs["obstacles_in_range"] = in_range
 
-        if "observation" in self.sim.disturbances:
-            obs = self.sim.disturbances["observation"].apply(obs)
-        return obs
+            if "observation" in self.sim.disturbances:
+                obs = self.sim.disturbances["observation"].apply(obs)
+            total_obs += [obs]
+        return total_obs
 
     @property
     def reward(self) -> float:
@@ -264,7 +268,8 @@ class DroneRacingEnv(gymnasium.Env):
         Returns:
             Reward for the current state.
         """
-        return -1.0 if self.target_gate != -1 else 0.0
+        # return -1.0 if self.target_gate != -1 else 0.0
+        return 0.0
 
     @property
     def terminated(self) -> bool:
@@ -274,32 +279,39 @@ class DroneRacingEnv(gymnasium.Env):
             True if the drone is out of bounds, colliding with an obstacle, or has passed all gates,
             else False.
         """
-        state = {k: getattr(self.sim.drone, k).copy() for k in self.sim.state_space}
-        state["ang_vel"] = R.from_euler("xyz", state["rpy"]).apply(state["ang_vel"], inverse=True)
-        if state not in self.sim.state_space:
-            return True  # Drone is out of bounds
-        if self.sim.collisions:
-            return True
-        if self.target_gate == -1:  # Drone has passed all gates
-            return True
-        return False
+        for i, drone in enumerate(self.sim.drones):
+            state = {k: getattr(drone, k).copy() for k in self.sim.state_space}
+            state["ang_vel"] = R.from_euler("xyz", state["rpy"]).apply(
+                state["ang_vel"], inverse=True
+            )
+            if state not in self.sim.state_space:
+                return True  # Drone is out of bounds
+            if self.sim.collisions:
+                return True
+            if self.target_gates[i] == -1:  # Drone has passed all gates
+                return True
+            return False
 
     @property
     def info(self) -> dict:
         """Return an info dictionary containing additional information about the environment."""
         return {"collisions": self.sim.collisions, "symbolic_model": self.symbolic}
 
-    def gate_passed(self) -> bool:
+    def gate_passed(self, idx) -> bool:
         """Check if the drone has passed a gate.
 
         Returns:
             True if the drone has passed a gate, else False.
         """
-        if self.sim.n_gates > 0 and self.target_gate < self.sim.n_gates and self.target_gate != -1:
-            gate_pos = self.sim.gates[self.target_gate]["pos"]
-            gate_rot = R.from_euler("xyz", self.sim.gates[self.target_gate]["rpy"])
-            drone_pos = self.sim.drone.pos
-            last_drone_pos = self._last_drone_pos
+        if (
+            self.sim.n_gates > 0
+            and self.target_gates[idx] < self.sim.n_gates
+            and self.target_gates[idx] != -1
+        ):
+            gate_pos = self.sim.gates[self.target_gates[idx]]["pos"]
+            gate_rot = R.from_euler("xyz", self.sim.gates[self.target_gates[idx]]["rpy"])
+            drone_pos = self.sim.drones[idx].pos
+            last_drone_pos = self._last_drone_pos[:, idx]
             gate_size = (0.45, 0.45)
             return check_gate_pass(gate_pos, gate_rot, gate_size, drone_pos, last_drone_pos)
         return False
@@ -379,7 +391,7 @@ class DroneRacingThrustEnv(DroneRacingEnv):
         Args:
             action: Thrust command [thrust, roll, pitch, yaw].
         """
-        assert action.shape == self.action_space.shape, f"Invalid action shape: {action.shape}"
+        # assert action.shape == self.action_space.shape, f"Invalid action shape: {action.shape}"
         action = action.astype(np.float64)
         collision = False
         # We currently need to differentiate between the sys_id backend and all others because the
@@ -387,12 +399,14 @@ class DroneRacingThrustEnv(DroneRacingEnv):
         # identified model). In future iterations, the sim API should be flexible to handle both
         # cases without an explicit step_sys_id function.
         if self.config.sim.physics == "sys_id":
-            cmd_thrust, cmd_rpy = action[0], action[1:]
-            self.sim.step_sys_id(cmd_thrust, cmd_rpy, 1 / self.config.env.freq)
-            self.target_gate += self.gate_passed()
-            if self.target_gate == self.sim.n_gates:
-                self.target_gate = -1
-            self._last_drone_pos[:] = self.sim.drone.pos
+            for i in range(self.no_drones):
+                drone = self.sim.drones[i]
+                cmd_thrust, cmd_rpy = action[0, i], action[1:, i]
+                self.sim.step_sys_id(drone, cmd_thrust, cmd_rpy, 1 / self.config.env.freq)
+                self.target_gates[i] += self.gate_passed(i)
+                if self.target_gates[i] == self.sim.n_gates:
+                    self.target_gates[i] = -1
+                self._last_drone_pos[:, i] = self.sim.drones[i].pos
         else:
             # Crazyflie firmware expects negated pitch command. TODO: Check why this is the case and
             # fix this on the firmware side if possible.
@@ -400,5 +414,5 @@ class DroneRacingThrustEnv(DroneRacingEnv):
             self.sim.drone.collective_thrust_cmd(cmd_thrust, cmd_rpy)
             collision = self._inner_step_loop()
         terminated = self.terminated or collision
-        self.data_logger.log_data(self.obs, action)
+        # self.data_logger.log_data(self.obs, action)
         return self.obs, self.reward, terminated, False, self.info
