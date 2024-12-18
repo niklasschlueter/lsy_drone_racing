@@ -61,7 +61,9 @@ def simulate(
     no_drones = config.sim.no_drones
     # Load the controller module
     control_path = Path(__file__).parents[1] / "lsy_drone_racing/control"
+    print(f"controller argument: {controller}")
     controller_path = control_path / (controller or config.controller.file)
+    print(f"using controller path: {controller_path}")
     controller_cls = load_controller(controller_path)  # This returns a class, not an instance
     # Create the racing environment
     env: DroneRacingEnv = gymnasium.make(env_id or config.env.id, config=config)
@@ -95,9 +97,10 @@ def simulate(
             env.start_time = t_start
             obs, reward, terminated, truncated, info = env.step(actions)
             done = terminated or truncated
-            # Update the controller internal state and models.
-            # controller.step_callback(action, obs, reward, terminated, truncated, info)
-            # Add up reward, collisions
+            for i in range(no_drones):
+                # Update the controller internal state and models.
+                controllers[i].step_callback(action, obs, reward, terminated, truncated, info)
+                # Add up reward, collisions
 
             # Synchronize the GUI.
             if config.sim.gui:
@@ -105,9 +108,10 @@ def simulate(
                     time.sleep(1 / config.env.freq - elapsed)
             i += 1
 
-        controller.episode_callback()  # Update the controller internal state and models.
+        for i in range(no_drones):
+            controllers[i].episode_callback()  # Update the controller internal state and models.
+            controllers[i].episode_reset()
         log_episode_stats(obs, info, config, curr_time)
-        controller.episode_reset()
         ep_times.append(curr_time if obs["target_gate"] == -1 else None)
 
     # Close the environment
