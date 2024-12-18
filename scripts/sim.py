@@ -71,7 +71,12 @@ def simulate(
     for _ in range(n_runs):  # Run n_runs episodes with the controller
         done = False
         obs, info = env.reset()
-        controller: BaseController = controller_cls(obs, info)
+        # TODO: make controller modular
+        # create controller for each drone -> for now all the drones have the same one!
+        controllers = []
+        for i in range(no_drones):
+            controllers += [controller_cls(obs[i], info)]
+
         if gui:
             gui_timer = update_gui_timer(0.0, env.unwrapped.sim.pyb_client, gui_timer)
         i = 0
@@ -84,7 +89,7 @@ def simulate(
 
             actions = np.zeros((4, no_drones))
             for i in range(no_drones):
-                action = controller.compute_control(obs[i], info)
+                action = controllers[i].compute_control(obs[i], info)
                 actions[:, i] = action
 
             env.start_time = t_start
