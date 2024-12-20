@@ -265,12 +265,13 @@ class DroneRacingEnv(gymnasium.Env):
 
             # add positions of other drone to obs
             # "not i" just always takes the other indice.
-            obs["opponent"] = {
-                "pos": self.sim.drones[not i].pos.astype(np.float32),
-                "rpy": self.sim.drones[not i].rpy.astype(np.float32),
-                "vel": self.sim.drones[not i].vel.astype(np.float32),
-                "ang_vel": self.sim.drones[not i].ang_vel.astype(np.float32),
-            }
+            if len(self.sim.drones) > 1:
+                obs["opponent"] = {
+                    "pos": self.sim.drones[not i].pos.astype(np.float32),
+                    "rpy": self.sim.drones[not i].rpy.astype(np.float32),
+                    "vel": self.sim.drones[not i].vel.astype(np.float32),
+                    "ang_vel": self.sim.drones[not i].ang_vel.astype(np.float32),
+                }
 
             if "observation" in self.sim.disturbances:
                 obs = self.sim.disturbances["observation"].apply(obs)
