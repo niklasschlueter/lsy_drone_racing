@@ -62,7 +62,7 @@ def main(config: str = "level3.toml", controller: str | None = None):
         start_time = time.perf_counter()
         while not rospy.is_shutdown():
             t_loop = time.perf_counter()
-            obs, info = env.obs, env.info
+            obs, info = env.unwrapped.obs, env.unwrapped.info
             action = controller.compute_control(obs, info)
             env.start_time = t_loop
             next_obs, reward, terminated, truncated, info = env.step(action)
