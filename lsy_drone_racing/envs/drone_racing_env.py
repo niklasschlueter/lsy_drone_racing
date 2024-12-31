@@ -191,7 +191,7 @@ class DroneRacingEnv(gymnasium.Env):
         self.sim.drone.full_state_cmd(pos, vel, acc, yaw, rpy_rate)
         collision = self._inner_step_loop()
         terminated = self.terminated or collision
-        self.data_logger.log_data(self.obs, action)
+        # self.data_logger.log_data(self.obs, action, drone_index=0)  # TODO: Fix for multiple drones!
         return self.obs, self.reward, terminated, False, self.info
 
     def _inner_step_loop(self) -> bool:
@@ -275,6 +275,7 @@ class DroneRacingEnv(gymnasium.Env):
 
             if "observation" in self.sim.disturbances:
                 obs = self.sim.disturbances["observation"].apply(obs)
+            obs["drone_index"] = i
             total_obs += [obs]
         return total_obs
 
@@ -436,5 +437,8 @@ class DroneRacingThrustEnv(DroneRacingEnv):
             self.sim.drone.collective_thrust_cmd(cmd_thrust, cmd_rpy)
             collision = self._inner_step_loop()
         terminated = self.terminated or collision
-        # self.data_logger.log_data(self.obs, action)
+        for i in range(self.no_drones):
+            self.data_logger.log_data(
+                self.obs[i], action[:, i], drone_index=i
+            )  # TODO: fix for multiple drones!
         return self.obs, self.reward, terminated, False, self.info
