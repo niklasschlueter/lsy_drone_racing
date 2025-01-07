@@ -23,7 +23,8 @@ practice_without_track_objects = true
 # "pyb_drag": PyBullet with drag
 # "pyb_dw": PyBullet with downwash
 # "pyb_gnd_drag_dw": PyBullet with ground effect, drag, and downwash.
-physics = "sys_id"
+#physics = "sys_id"
+physics = "pyb"
 
 no_drones = 2
 

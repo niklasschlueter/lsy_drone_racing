@@ -215,9 +215,9 @@ class DroneRacingEnv(gymnasium.Env):
                 collision |= bool(self.sim.collisions)
                 pos, rpy, vel = drone.pos, drone.rpy, drone.vel
                 thrust = drone.step_controller(pos, rpy, vel)[::-1]
-            self.desired_thrust[i, :] = thrust
+            drone.desired_thrust = thrust
             self._last_drone_pos[:, i] = drone.pos
-            drone._steps += 1
+            self._steps += 1
         return collision
 
     @property
@@ -336,12 +336,12 @@ class DroneRacingEnv(gymnasium.Env):
             drone_pos = self.sim.drones[idx].pos
             last_drone_pos = self._last_drone_pos[:, idx]
             gate_size = (0.45, 0.45)
-            return check_gate_pass(gate_pos, gate_rot, gate_size, drone_pos, last_drone_pos)
+            return check_gate_pass(idx, gate_pos, gate_rot, gate_size, drone_pos, last_drone_pos)
         return False
 
     def close(self):
         """Close the environment by stopping the drone and landing back at the starting position."""
-        return_home = True  # makes the drone simulate the return to home after stopping
+        return_home = False  # makes the drone simulate the return to home after stopping
 
         if return_home:
             # This is done to run the closing controller at a different frequency than the controller before
@@ -433,8 +433,10 @@ class DroneRacingThrustEnv(DroneRacingEnv):
         else:
             # Crazyflie firmware expects negated pitch command. TODO: Check why this is the case and
             # fix this on the firmware side if possible.
-            cmd_thrust, cmd_rpy = action[0], action[1:] * np.array([1, -1, 1])
-            self.sim.drone.collective_thrust_cmd(cmd_thrust, cmd_rpy)
+            cmd_thrust, cmd_rpy = action[0, 0], action[1:, 0] * np.array([1, -1, 1])
+            # Attention! Because pycffirmware only works with 1 drones, we only do this for one drone.
+            print(f"cmd thrust: {cmd_thrust}, cmd rpy; {cmd_rpy}")
+            self.sim.drones[0].collective_thrust_cmd(cmd_thrust, cmd_rpy)
             collision = self._inner_step_loop()
         terminated = self.terminated or collision
         for i in range(self.no_drones):

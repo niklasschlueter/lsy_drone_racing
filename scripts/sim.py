@@ -77,7 +77,7 @@ def simulate(
         # create controller for each drone -> for now all the drones have the same one!
         controllers = []
         for i in range(no_drones):
-            controllers += [controller_cls(obs[i], info)]
+            controllers += [controller_cls(obs[i], info, config, i)]
 
         if gui:
             gui_timer = update_gui_timer(0.0, env.unwrapped.sim.pyb_client, gui_timer)
@@ -111,8 +111,9 @@ def simulate(
         for i in range(no_drones):
             controllers[i].episode_callback()  # Update the controller internal state and models.
             controllers[i].episode_reset()
-        log_episode_stats(obs, info, config, curr_time)
-        ep_times.append(curr_time if obs["target_gate"] == -1 else None)
+        print(obs)
+        # log_episode_stats(obs, info, config, curr_time)
+        # ep_times.append(curr_time if obs["target_gate"] == -1 else None)
 
     # Close the environment
     env.close()
