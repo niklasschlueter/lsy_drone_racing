@@ -101,9 +101,9 @@ class DroneRacingDeployEnv(gymnasium.Env):
                 "target_gate": spaces.Discrete(n_gates, start=-1),
                 "gates_pos": spaces.Box(low=-np.inf, high=np.inf, shape=(n_gates, 3)),
                 "gates_rpy": spaces.Box(low=-np.pi, high=np.pi, shape=(n_gates, 3)),
-                "gates_in_range": spaces.Box(low=0, high=1, shape=(n_gates,), dtype=np.bool_),
+                "gates_visited": spaces.Box(low=0, high=1, shape=(n_gates,), dtype=np.bool_),
                 "obstacles_pos": spaces.Box(low=-np.inf, high=np.inf, shape=(n_obstacles, 3)),
-                "obstacles_in_range": spaces.Box(
+                "obstacles_visited": spaces.Box(
                     low=0, high=1, shape=(n_obstacles,), dtype=np.bool_
                 ),
             }
@@ -191,54 +191,83 @@ class DroneRacingDeployEnv(gymnasium.Env):
         self.data_logger.log_data(self.obs, action)
         return self.obs, -1.0, terminated, False, self.info
 
+    # def close(self):
+    #    """Close the environment by stopping the drone and landing back at the starting position."""
+    #    return_home = True  # makes the drone simulate the return to home after stopping
+
+    #    if return_home:
+    #        # This is done to run the closing controller at a different frequency than the controller before
+    #        # Does not influence other code, since this part is already in closing!
+    #        # WARNING: When changing the frequency, you must also change the current _step!!!
+    #        freq_new = 100  # Hz
+    #        self.config.env.freq = freq_new
+    #        t_step_ctrl = 1 / self.config.env.freq
+
+    #        obs = self.obs
+    #        obs["acc"] = np.array(
+    #            [0, 0, 0]
+    #        )  # TODO, use actual value when avaiable or do one step to calculate from velocity
+    #        info = self.info
+    #        info["env_freq"] = self.config.env.freq
+    #        info["drone_start_pos"] = self.config.env.track.drone.pos
+
+    #        controller = ClosingController(obs, info)
+    #        t_total = controller.t_total
+
+    #        for i in np.arange(int(t_total / t_step_ctrl)):  # hover for some more time
+    #            action = controller.compute_control(obs)
+    #            action = action.astype(np.float64)  # Drone firmware expects float64
+    #            pos, vel, acc, yaw, rpy_rate = (
+    #                action[:3],
+    #                action[3:6],
+    #                action[6:9],
+    #                action[9],
+    #                action[10:],
+    #            )
+    #            self.cf.cmdFullState(pos, vel, acc, yaw, rpy_rate)
+    #            obs = self.obs
+    #            obs["acc"] = np.array([0, 0, 0])
+    #            controller.step_callback(action, obs, 0, True, False, info)
+    #            time.sleep(t_step_ctrl)
+
+    #    self.cf.notifySetpointsStop()
+    #    self.cf.land(0.05, 2.0)
     def close(self):
         """Close the environment by stopping the drone and landing back at the starting position."""
-        return_home = True  # makes the drone simulate the return to home after stopping
+        RETURN_HEIGHT = 1.75  # m
+        BREAKING_DISTANCE = 1.0  # m
+        BREAKING_DURATION = 4.0  # s
+        RETURN_DURATION = 5.0  # s
+        LAND_DURATION = 4.5  # s
 
-        if return_home:
-            # This is done to run the closing controller at a different frequency than the controller before
-            # Does not influence other code, since this part is already in closing!
-            # WARNING: When changing the frequency, you must also change the current _step!!!
-            freq_new = 100  # Hz
-            self.config.env.freq = freq_new
-            t_step_ctrl = 1 / self.config.env.freq
-
+        try:  # prevent hanging process if drone not reachable
+            self.cf.notifySetpointsStop()
             obs = self.obs
-            obs["acc"] = np.array(
-                [0, 0, 0]
-            )  # TODO, use actual value when avaiable or do one step to calculate from velocity
-            info = self.info
-            info["env_freq"] = self.config.env.freq
-            info["drone_start_pos"] = self.config.env.track.drone.pos
 
-            controller = ClosingController(obs, info)
-            t_total = controller.t_total
+            return_pos = (
+                obs["pos"] + obs["vel"] / (np.linalg.norm(obs["vel"]) + 1e-8) * BREAKING_DISTANCE
+            )
+            return_pos[2] = RETURN_HEIGHT
+            self.cf.goTo(goal=return_pos, yaw=0, duration=BREAKING_DURATION)
+            time.sleep(BREAKING_DURATION - 1)
 
-            for i in np.arange(int(t_total / t_step_ctrl)):  # hover for some more time
-                action = controller.compute_control(obs)
-                action = action.astype(np.float64)  # Drone firmware expects float64
-                pos, vel, acc, yaw, rpy_rate = (
-                    action[:3],
-                    action[3:6],
-                    action[6:9],
-                    action[9],
-                    action[10:],
-                )
-                self.cf.cmdFullState(pos, vel, acc, yaw, rpy_rate)
-                obs = self.obs
-                obs["acc"] = np.array([0, 0, 0])
-                controller.step_callback(action, obs, 0, True, False, info)
-                time.sleep(t_step_ctrl)
+            return_pos[:2] = self.config.env.track.drone.pos[:2]
+            self.cf.goTo(goal=return_pos, yaw=0, duration=RETURN_DURATION)
+            time.sleep(RETURN_DURATION)
 
-        self.cf.notifySetpointsStop()
-        self.cf.land(0.05, 2.0)
+            self.cf.land(self.config.env.track.drone.pos[2], LAND_DURATION)
+            # time.sleep(LAND_DURATION)
+        except Exception as e:
+            logger.error("Cannot return home: " + str(e))
 
     @property
     def obs(self) -> dict:
         """Return the observation of the environment."""
         drone = self.vicon.drone_name
         rpy = self.vicon.rpy[drone]
-        ang_vel = R.from_euler("xyz", rpy).inv().apply(self.vicon.ang_vel[drone])
+        # TODO: Check out whether to do or not to do this!
+        ang_vel = self.vicon.ang_vel[drone]  # new, modified
+        # ang_vel = R.from_euler("xyz", rpy).inv().apply(self.vicon.ang_vel[drone])
         obs = {
             "pos": self.vicon.pos[drone].astype(np.float32),
             "rpy": rpy.astype(np.float32),
@@ -275,14 +304,14 @@ class DroneRacingDeployEnv(gymnasium.Env):
             self.gates_visited = np.logical_or(self.gates_visited, in_range)
             gates_pos[self.gates_visited] = real_gates_pos[self.gates_visited]
             gates_rpy[self.gates_visited] = real_gates_rpy[self.gates_visited]
-            obs["gates_in_range"] = in_range
+            obs["gates_visited"] = in_range
 
             in_range = (
                 np.linalg.norm(real_obstacles_pos[:, :2] - drone_pos[:2], axis=1) < sensor_range
             )
             self.obstacles_visited = np.logical_or(self.obstacles_visited, in_range)
             obstacles_pos[self.obstacles_visited] = real_obstacles_pos[self.obstacles_visited]
-            obs["obstacles_in_range"] = in_range
+            obs["obstacles_visited"] = in_range
 
         obs["gates_pos"] = gates_pos.astype(np.float32)
         obs["gates_rpy"] = gates_rpy.astype(np.float32)
@@ -308,7 +337,7 @@ class DroneRacingDeployEnv(gymnasium.Env):
             gate_size = (0.56, 0.56)
             gate_pos = self._obs["gates_pos"][self.target_gate]
             gate_rot = R.from_euler("xyz", self._obs["gates_rpy"][self.target_gate])
-            return check_gate_pass(gate_pos, gate_rot, gate_size, pos, prev_pos)
+            return check_gate_pass(self.target_gate, gate_pos, gate_rot, gate_size, pos, prev_pos)
         return False
 
 
@@ -411,6 +440,8 @@ class ASYNCDroneRacingThrustDeployEnv(gymnasium.Env):
         )
 
         self.target_gates = [0] * self.no_drones
+        # The last time a drone passed a gate.
+        self.finishing_time = [None] * self.no_drones
         ## All the crazyswarm stuff
         # crazyswarm_config_path = (
         # get_ros_package_path("crazyswarm", heuristic_search=True) / "launch/crazyflies.yaml"
@@ -450,7 +481,7 @@ class ASYNCDroneRacingThrustDeployEnv(gymnasium.Env):
         ).reshape((len(config.env.track.gates), self.no_drones))
 
         self.data_logger = DataLogger("data/last_run_deploy.csv", "full")
-        self.start_time = time.perf_counter()
+        self.start_time = None
 
         # Use internal variable to store results of self.obs that is updated every time
         # self.obs is invoked in order to prevent calling it every time its needed.
@@ -501,6 +532,8 @@ class ASYNCDroneRacingThrustDeployEnv(gymnasium.Env):
             frequency on their own, and need to update the current observation and info before
             computing the next action.
         """
+        if self.start_time is None:
+            self.start_time = time.perf_counter()
         # assert action.shape == self.action_space.shape, f"Invalid action shape: {action.shape}"
         # collective_thrust, rpy = action[0], action[1:]
 
@@ -534,6 +567,8 @@ class ASYNCDroneRacingThrustDeployEnv(gymnasium.Env):
             self._last_positions[:, i] = current_pos
             if self.target_gates[i] >= len(self.config.env.track.gates):
                 self.target_gates[i] = -1
+                if self.finishing_time[i] is None:
+                    self.finishing_time[i] = time.perf_counter() - self.start_time
             terminated = all(np.array(self.target_gates) == -1)
             # self.data_logger.log_data(self._obs, action)
         return self.obs, -1.0, terminated, False, self.info
@@ -625,5 +660,5 @@ class ASYNCDroneRacingThrustDeployEnv(gymnasium.Env):
             gate_size = (0.56, 0.56)
             gate_pos = obs["gates_pos"][target_gate]
             gate_rot = R.from_euler("xyz", obs["gates_rpy"][target_gate])
-            return check_gate_pass(gate_pos, gate_rot, gate_size, pos, prev_pos)
+            return check_gate_pass(target_gate, gate_pos, gate_rot, gate_size, pos, prev_pos)
         return False

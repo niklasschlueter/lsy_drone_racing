@@ -463,15 +463,15 @@ class Sim:
         Returns:
             The motors' RPMs to apply to the quadrotor.
         """
-        thrust = np.clip(thrust, self.drone.params.min_thrust, self.drone.params.max_thrust)
+        thrust = np.clip(thrust, self.drones[0].params.min_thrust, self.drones[0].params.max_thrust)
         if "action" in self.disturbances:
             thrust = self.disturbances["action"].apply(thrust)
         thrust = np.clip(thrust, 0, None)  # Make sure thrust is not negative after disturbances
         pwm = (
-            np.sqrt(thrust / self.drone.params.kf) - self.drone.params.pwm2rpm_const
-        ) / self.drone.params.pwm2rpm_scale
-        pwm = np.clip(pwm, self.drone.params.min_pwm, self.drone.params.max_pwm)
-        return self.drone.params.pwm2rpm_const + self.drone.params.pwm2rpm_scale * pwm
+            np.sqrt(thrust / self.drones[0].params.kf) - self.drones[0].params.pwm2rpm_const
+        ) / self.drones[0].params.pwm2rpm_scale
+        pwm = np.clip(pwm, self.drones[0].params.min_pwm, self.drones[0].params.max_pwm)
+        return self.drones[0].params.pwm2rpm_const + self.drones[0].params.pwm2rpm_scale * pwm
 
 
 @dataclass

@@ -91,6 +91,7 @@ def load_config(path: Path) -> Munch:
 
 
 def check_gate_pass(
+    gate_idx: int,
     gate_pos: np.ndarray,
     gate_rot: R,
     gate_size: np.ndarray,
@@ -129,9 +130,13 @@ def check_gate_pass(
         z_intersect = alpha * (pos_local[2]) + (1 - alpha) * last_pos_local[2]
         # Divide gate size by 2 to get the distance from the center to the edges
         if abs(x_intersect) < gate_size[0] / 2 and abs(z_intersect) < gate_size[1] / 2:
-            print(f"Drone successfully passed goal with distance {x_intersect, z_intersect}")
+            print(
+                f"Drone successfully passed gate {gate_idx} with distance {x_intersect, z_intersect}"
+            )
             return True
-        print(f"Drone missed gate with distance {x_intersect, z_intersect}")
+        print(f"Drone missed gate {gate_idx} with distance {x_intersect, z_intersect}")
+        print(f"believed gate pos: {gate_pos}")
+        print(f"believed drone pos: {drone_pos}")
     return False
 
 

@@ -75,9 +75,9 @@ class DroneRacingEnv(gymnasium.Env):
     - "ang_vel": Drone angular velocity
     - "gates.pos": Positions of the gates
     - "gates.rpy": Orientations of the gates
-    - "gates.in_range": Flags indicating if the drone is in the sensor range of the gates
+    - "gates.visited": Flags indicating if the drone already was/ is in the sensor range of the gates and the true position is known
     - "obstacles.pos": Positions of the obstacles
-    - "obstacles.in_range": Flags indicating if the drone is in the sensor range of the obstacles
+    - "obstacles.visited": Flags indicating if the drone already was/ is in the sensor range of the obstacles and the true position is known
     - "target_gate": The current target gate index
 
     The action space consists of a desired full-state command
@@ -119,9 +119,9 @@ class DroneRacingEnv(gymnasium.Env):
                 "target_gate": spaces.Discrete(n_gates, start=-1),
                 "gates_pos": spaces.Box(low=-np.inf, high=np.inf, shape=(n_gates, 3)),
                 "gates_rpy": spaces.Box(low=-np.pi, high=np.pi, shape=(n_gates, 3)),
-                "gates_in_range": spaces.Box(low=0, high=1, shape=(n_gates,), dtype=np.bool_),
+                "gates_visited": spaces.Box(low=0, high=1, shape=(n_gates,), dtype=np.bool_),
                 "obstacles_pos": spaces.Box(low=-np.inf, high=np.inf, shape=(n_obstacles, 3)),
-                "obstacles_in_range": spaces.Box(
+                "obstacles_visited": spaces.Box(
                     low=0, high=1, shape=(n_obstacles,), dtype=np.bool_
                 ),
             }
@@ -133,6 +133,9 @@ class DroneRacingEnv(gymnasium.Env):
 
         self.data_logger = DataLogger("data/last_run_sim.csv", "full")
         self.start_time = time.perf_counter()
+
+        self.gates_visited = np.array([False] * len(config.env.track.gates))
+        self.obstacles_visited = np.array([False] * len(config.env.track.obstacles))
 
     def reset(
         self, *, seed: int | None = None, options: dict | None = None
@@ -188,7 +191,7 @@ class DroneRacingEnv(gymnasium.Env):
         self.sim.drone.full_state_cmd(pos, vel, acc, yaw, rpy_rate)
         collision = self._inner_step_loop()
         terminated = self.terminated or collision
-        self.data_logger.log_data(self.obs, action)
+        # self.data_logger.log_data(self.obs, action, drone_index=0)  # TODO: Fix for multiple drones!
         return self.obs, self.reward, terminated, False, self.info
 
     def _inner_step_loop(self) -> bool:
@@ -212,9 +215,9 @@ class DroneRacingEnv(gymnasium.Env):
                 collision |= bool(self.sim.collisions)
                 pos, rpy, vel = drone.pos, drone.rpy, drone.vel
                 thrust = drone.step_controller(pos, rpy, vel)[::-1]
-            self.desired_thrust[i, :] = thrust
+            drone.desired_thrust = thrust
             self._last_drone_pos[:, i] = drone.pos
-            drone._steps += 1
+            self._steps += 1
         return collision
 
     @property
@@ -236,23 +239,43 @@ class DroneRacingEnv(gymnasium.Env):
             # Add the gate and obstacle poses to the info. If gates or obstacles are in sensor range,
             # use the actual pose, otherwise use the nominal pose.
             in_range = self.sim.in_range(gates, drone, self.config.env.sensor_range)
+            self.gates_visited = np.logical_or(self.gates_visited, in_range)
             gates_pos = np.stack([g["nominal.pos"] for g in gates.values()])
-            gates_pos[in_range] = np.stack([g["pos"] for g in gates.values()])[in_range]
+            gates_pos[self.gates_visited] = np.stack([g["pos"] for g in gates.values()])[
+                self.gates_visited
+            ]
             gates_rpy = np.stack([g["nominal.rpy"] for g in gates.values()])
-            gates_rpy[in_range] = np.stack([g["rpy"] for g in gates.values()])[in_range]
+            gates_rpy[self.gates_visited] = np.stack([g["rpy"] for g in gates.values()])[
+                self.gates_visited
+            ]
             obs["gates_pos"] = gates_pos.astype(np.float32)
             obs["gates_rpy"] = gates_rpy.astype(np.float32)
-            obs["gates_in_range"] = in_range
+            obs["gates_visited"] = self.gates_visited
 
             obstacles = self.sim.obstacles
             in_range = self.sim.in_range(obstacles, drone, self.config.env.sensor_range)
+            self.obstacles_visited = np.logical_or(self.obstacles_visited, in_range)
+
             obstacles_pos = np.stack([o["nominal.pos"] for o in obstacles.values()])
-            obstacles_pos[in_range] = np.stack([o["pos"] for o in obstacles.values()])[in_range]
+            obstacles_pos[self.obstacles_visited] = np.stack(
+                [o["pos"] for o in obstacles.values()]
+            )[self.obstacles_visited]
             obs["obstacles_pos"] = obstacles_pos.astype(np.float32)
-            obs["obstacles_in_range"] = in_range
+            obs["obstacles_visited"] = self.obstacles_visited
+
+            # add positions of other drone to obs
+            # "not i" just always takes the other indice.
+            if len(self.sim.drones) > 1:
+                obs["opponent"] = {
+                    "pos": self.sim.drones[not i].pos.astype(np.float32),
+                    "rpy": self.sim.drones[not i].rpy.astype(np.float32),
+                    "vel": self.sim.drones[not i].vel.astype(np.float32),
+                    "ang_vel": self.sim.drones[not i].ang_vel.astype(np.float32),
+                }
 
             if "observation" in self.sim.disturbances:
                 obs = self.sim.disturbances["observation"].apply(obs)
+            obs["drone_index"] = i
             total_obs += [obs]
         return total_obs
 
@@ -313,12 +336,12 @@ class DroneRacingEnv(gymnasium.Env):
             drone_pos = self.sim.drones[idx].pos
             last_drone_pos = self._last_drone_pos[:, idx]
             gate_size = (0.45, 0.45)
-            return check_gate_pass(gate_pos, gate_rot, gate_size, drone_pos, last_drone_pos)
+            return check_gate_pass(idx, gate_pos, gate_rot, gate_size, drone_pos, last_drone_pos)
         return False
 
     def close(self):
         """Close the environment by stopping the drone and landing back at the starting position."""
-        return_home = True  # makes the drone simulate the return to home after stopping
+        return_home = False  # makes the drone simulate the return to home after stopping
 
         if return_home:
             # This is done to run the closing controller at a different frequency than the controller before
@@ -410,9 +433,14 @@ class DroneRacingThrustEnv(DroneRacingEnv):
         else:
             # Crazyflie firmware expects negated pitch command. TODO: Check why this is the case and
             # fix this on the firmware side if possible.
-            cmd_thrust, cmd_rpy = action[0], action[1:] * np.array([1, -1, 1])
-            self.sim.drone.collective_thrust_cmd(cmd_thrust, cmd_rpy)
+            cmd_thrust, cmd_rpy = action[0, 0], action[1:, 0] * np.array([1, -1, 1])
+            # Attention! Because pycffirmware only works with 1 drones, we only do this for one drone.
+            print(f"cmd thrust: {cmd_thrust}, cmd rpy; {cmd_rpy}")
+            self.sim.drones[0].collective_thrust_cmd(cmd_thrust, cmd_rpy)
             collision = self._inner_step_loop()
         terminated = self.terminated or collision
-        # self.data_logger.log_data(self.obs, action)
+        for i in range(self.no_drones):
+            self.data_logger.log_data(
+                self.obs[i], action[:, i], drone_index=i
+            )  # TODO: fix for multiple drones!
         return self.obs, self.reward, terminated, False, self.info

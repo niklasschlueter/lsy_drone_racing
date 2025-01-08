@@ -64,17 +64,21 @@ class DataLogger:
             writer = csv.writer(file)
             writer.writerow([var.name for var in DataVarIndex])
 
-    def _write_data(self, data):
+    def _write_data(self, data, drone_index=0):
         """Log the data to the csv file."""
         # Make sure that the data has the correct length
         assert len(data) == len(DataVarIndex)
 
         # Log the data
-        with open(self.filename, mode="a") as file:
+        filename = (
+            self.filename.split(".")[0] + "_" + str(drone_index) + "." + self.filename.split(".")[1]
+        )
+        with open(filename, mode="a") as file:
             writer = csv.writer(file)
             writer.writerow(data)
 
-    def log_data(self, obs, action):
+    def log_data(self, obs, action, drone_index=0):
+        print(f"logging data!")
         # TODO: Make logging dependent on action type.
         # set start time
         if self.start_time is None:
@@ -146,7 +150,7 @@ class DataLogger:
             data[DataVarIndex.DES_PITCH] = rpy_des[1]
             data[DataVarIndex.DES_YAW] = rpy_des[2]
 
-        self._write_data(data)
+        self._write_data(data, drone_index=drone_index)
 
 
 # def load_data(filename):

@@ -373,8 +373,15 @@ if __name__ == "__main__":
 
     # plotter.plot_data(file_path, save=True, show=True)
     def plot_data_cli(prefix="sim", save=True, show=True):
-        plotter = Plotter()
-        file_path = Path("data") / f"last_run_{prefix}.csv"
-        plotter.plot_data(file_path, save, show)
+        drone_index = 0
+        while True:
+            try:
+                plotter = Plotter()
+                file_path = Path("data") / f"last_run_{prefix}_{drone_index}.csv"
+                plotter.plot_data(file_path, save, show)
+            except:
+                print(f"plotting not possible!")
+                break
+            drone_index += 1
 
     fire.Fire(plot_data_cli)

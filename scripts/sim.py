@@ -72,7 +72,8 @@ def simulate(
     for _ in range(n_runs):  # Run n_runs episodes with the controller
         done = False
         obs, info = env.reset()
-        
+        # TODO: make controller modular
+        # create controller for each drone -> for now all the drones have the same one!
         controllers = []
         gui_timers = []
         for i in range(no_drones):
@@ -108,11 +109,12 @@ def simulate(
                     time.sleep(1 / config.env.freq - elapsed)
             i += 1
 
-        for j in range(no_drones):
-            controllers[j].episode_callback()  # Update the controller internal state and models.
-            controllers[j].episode_reset()
-        log_episode_stats(obs, info, config, curr_time)
-        ep_times.append(curr_time if obs["target_gate"] == -1 else None)
+        for i in range(no_drones):
+            controllers[i].episode_callback()  # Update the controller internal state and models.
+            controllers[i].episode_reset()
+        print(obs)
+        # log_episode_stats(obs, info, config, curr_time)
+        # ep_times.append(curr_time if obs["target_gate"] == -1 else None)
 
     # Close the environment
     env.close()
