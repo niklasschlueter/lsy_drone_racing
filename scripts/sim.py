@@ -69,38 +69,47 @@ def simulate(
     env: DroneRacingEnv = gymnasium.make(env_id or config.env.id, config=config)
 
     ep_times = []
-    gui_timer = None
     for _ in range(n_runs):  # Run n_runs episodes with the controller
         done = False
         obs, info = env.reset()
         # TODO: make controller modular
         # create controller for each drone -> for now all the drones have the same one!
         controllers = []
+        gui_timers = []
         for i in range(no_drones):
             info["id"] = i
             controllers += [controller_cls(obs[i], info, config)]
 
-        if gui:
-            gui_timer = update_gui_timer(0.0, env.unwrapped.sim.pyb_client, gui_timer)
+            if gui:
+                gui_timers += [
+                    update_gui_timer(0.0, env.unwrapped.sim.pyb_client, None, [0, 0, 1.5 + i * 0.5])
+                ]
         i = 0
 
         while not done:
             t_start = time.time()
             curr_time = i / config.env.freq
-            if gui:
-                gui_timer = update_gui_timer(curr_time, env.unwrapped.sim.pyb_client, gui_timer)
 
             actions = np.zeros((4, no_drones))
-            for i in range(no_drones):
-                action = controllers[i].compute_control(obs[i], info)
-                actions[:, i] = action
+            print(f"gui timers: {gui_timers}")
+            for j in range(no_drones):
+                if gui:
+                    gui_timers[j] = update_gui_timer(
+                        curr_time,
+                        env.unwrapped.sim.pyb_client,
+                        gui_timers[j],
+                        [0, 0, 1.5 + j * 0.5],
+                    )
+
+                action = controllers[j].compute_control(obs[j], info)
+                actions[:, j] = action
 
             env.start_time = t_start
             obs, reward, terminated, truncated, info = env.step(actions)
             done = terminated or truncated
-            for i in range(no_drones):
+            for j in range(no_drones):
                 # Update the controller internal state and models.
-                controllers[i].step_callback(action, obs, reward, terminated, truncated, info)
+                controllers[j].step_callback(action, obs, reward, terminated, truncated, info)
                 # Add up reward, collisions
 
             # Synchronize the GUI.
@@ -121,22 +130,38 @@ def simulate(
     return ep_times
 
 
-def update_gui_timer(t: float, client_id: int, g_id: int | None = None) -> int:
+def update_gui_timer(
+    t: float, client_id: int, g_id: int | None = None, textPosition=[0, 0, 1.5]
+) -> int:
     """Update the timer in the GUI."""
     text = f"Ep. time: {t:.2f}s"
     if g_id is None:
-        return p.addUserDebugText(text, textPosition=[0, 0, 1.5], physicsClientId=client_id)
+        return p.addUserDebugText(
+            text,
+            textPosition=textPosition,
+            textSize=1.5,
+            textColorRGB=[1, 0, 0],
+            physicsClientId=client_id,
+        )
     return p.addUserDebugText(
         text,
-        textPosition=[0, 0, 1.5],
-        textColorRGB=[1, 0, 0],
-        lifeTime=0,
-        textSize=1.5,
-        parentObjectUniqueId=0,
-        parentLinkIndex=-1,
+        textPosition=textPosition,
         replaceItemUniqueId=g_id,
+        textSize=1.5,
+        textColorRGB=[1, 0, 0],
         physicsClientId=client_id,
     )
+    # return p.addUserDebugText(
+    #    text,
+    #    textPosition=[0, 0, 1.5],
+    #    textColorRGB=[1, 0, 0],
+    #    lifeTime=0,
+    #    textSize=1.5,
+    #    parentObjectUniqueId=0,
+    #    parentLinkIndex=-1,
+    #    replaceItemUniqueId=g_id,
+    #    physicsClientId=client_id,
+    # )
 
 
 def log_episode_stats(obs: dict, info: dict, config: Munch, curr_time: float):
