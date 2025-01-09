@@ -77,7 +77,8 @@ def simulate(
         # create controller for each drone -> for now all the drones have the same one!
         controllers = []
         for i in range(no_drones):
-            controllers += [controller_cls(obs[i], info, config, i)]
+            info["id"] = i
+            controllers += [controller_cls(obs[i], info, config)]
 
         if gui:
             gui_timer = update_gui_timer(0.0, env.unwrapped.sim.pyb_client, gui_timer)
