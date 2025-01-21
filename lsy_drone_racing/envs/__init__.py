@@ -22,34 +22,34 @@ __all__ = ["DroneRacingEnv"]
 register(
     id="DroneRacing-v0",
     entry_point="lsy_drone_racing.envs.drone_racing_env:DroneRacingEnv",
-    max_episode_steps=1800,  # 30 seconds * 60 Hz,
+    max_episode_steps=18000,  # 30 seconds * 60 Hz,
     disable_env_checker=True,  # Remove warnings about 2D observations
 )
 
 register(
     id="DroneRacingThrust-v0",
     entry_point="lsy_drone_racing.envs.drone_racing_env:DroneRacingThrustEnv",
-    max_episode_steps=1800,
+    max_episode_steps=18000,
     disable_env_checker=True,
 )
 
 register(
     id="DroneRacingDeploy-v0",
     entry_point="lsy_drone_racing.envs.drone_racing_deploy_env:DroneRacingDeployEnv",
-    max_episode_steps=1800,
+    max_episode_steps=18000,
     disable_env_checker=True,
 )
 
 register(
     id="DroneRacingThrustDeploy-v0",
     entry_point="lsy_drone_racing.envs.drone_racing_deploy_env:DroneRacingThrustDeployEnv",
-    max_episode_steps=1800,
+    max_episode_steps=18000,
     disable_env_checker=True,
 )
 
 register(
     id="ASYNCDroneRacingThrustDeploy-v0",
     entry_point="lsy_drone_racing.envs.drone_racing_deploy_env:ASYNCDroneRacingThrustDeployEnv",
-    max_episode_steps=1800,
+    max_episode_steps=18000,
     disable_env_checker=True,
 )

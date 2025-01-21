@@ -26,7 +26,7 @@ practice_without_track_objects = true
 #physics = "sys_id"
 physics = "pyb"
 
-no_drones = 2
+no_drones = 1
 
 camera_view = [5.0, -40.0, -40.0, 0.5, -1.0, 0.5]
 sim_freq = 500                                    # Simulation frequency, in Hz

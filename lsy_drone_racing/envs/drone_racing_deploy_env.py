@@ -478,7 +478,7 @@ class ASYNCDroneRacingThrustDeployEnv(gymnasium.Env):
         ).reshape((len(config.env.track.gates), self.no_drones))
         self.obstacles_visited = np.array(
             [False] * len(config.env.track.obstacles) * self.no_drones
-        ).reshape((len(config.env.track.gates), self.no_drones))
+        ).reshape((len(config.env.track.obstacles), self.no_drones))
 
         self.data_logger = DataLogger("data/last_run_deploy.csv", "full")
         self.start_time = None

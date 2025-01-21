@@ -33,7 +33,7 @@ logger = logging.getLogger(__name__)
 
 def simulate(
     config: str = "level0.toml",
-    controller: str | None = None,
+    controllers: str | None = None,
     n_runs: int = 1,
     gui: bool | None = None,
     env_id: str | None = None,
@@ -59,12 +59,18 @@ def simulate(
     else:
         config.sim.gui = gui
     no_drones = config.sim.no_drones
-    # Load the controller module
-    control_path = Path(__file__).parents[1] / "lsy_drone_racing/control"
-    print(f"controller argument: {controller}")
-    controller_path = control_path / (controller or config.controller.file)
-    print(f"using controller path: {controller_path}")
-    controller_cls = load_controller(controller_path)  # This returns a class, not an instance
+    if controllers is None or controllers == []:
+        controllers = config.controller.files
+    controller_clss = []
+    for controller in controllers:
+        # Load the controller module
+        control_path = Path(__file__).parents[1] / "lsy_drone_racing/control"
+        print(f"controller argument: {controller}")
+        controller_path = control_path / (controller or config.controller.file)
+        print(f"using controller path: {controller_path}")
+        controller_clss += [
+            load_controller(controller_path)
+        ]  # This returns a class, not an instance
     # Create the racing environment
     env: DroneRacingEnv = gymnasium.make(env_id or config.env.id, config=config)
 
@@ -78,7 +84,7 @@ def simulate(
         gui_timers = []
         for i in range(no_drones):
             info["id"] = i
-            controllers += [controller_cls(obs[i], info, config)]
+            controllers += [controller_clss[i](obs[i], info, config)]
 
             if gui:
                 gui_timers += [
