@@ -23,6 +23,7 @@ if TYPE_CHECKING:
     import numpy as np
     from numpy.typing import NDArray
 
+import time
 
 class BaseController(ABC):
     """Base class for controller implementations."""
@@ -40,6 +41,13 @@ class BaseController(ABC):
                 observation space for details.
             initial_info: Additional environment information from the reset.
         """
+        self.initial_obs = initial_obs
+        self.initial_info = initial_info
+        self.close_ctrl_time = None
+        self.return_pos = None
+        self.return_status = 0
+        self.finished = False
+
 
     @abstractmethod
     def compute_control(
@@ -102,3 +110,70 @@ class BaseController(ABC):
 
     def episode_reset(self):
         """Reset the controller's internal state and models if necessary."""
+
+    def close(self, obs):
+        """Close the environment by stopping the drone and landing back at the starting position."""
+        """Basically just a state machine that breaks, flys back and lands."""
+        RETURN_HEIGHT = 1.75  # m
+        BREAKING_DISTANCE = 1.0  # m
+        BREAKING_DURATION = 3.0  # s
+        RETURN_DURATION = 5.0  # s
+        LAND_DURATION = 4.5  # s
+
+        POS_CMD = 1
+        KILL_CMD = -9
+
+        try:  # prevent hanging process if drone not reachable
+            if self.close_ctrl_time is None:
+                self.return_status = 1
+                print(f"close ctrl time None")
+                self.close_ctrl_time = time.perf_counter()
+
+                # Add a orhtogoonal part to the current drone velocity to the return pos so that the drones dont interfer with each other.
+                self.return_pos = (
+                    obs["pos"]
+                    + (
+                        obs["vel"] / (np.linalg.norm(obs["vel"]) + 1e-8) * 0.9
+                        + obs["vel"]
+                        * np.array([2 * self.controller_id - 1, -(2 * self.controller_id - 1), 0])
+                        / (np.linalg.norm(obs["vel"]) + 1e-8)
+                        * 0.1
+                    )
+                    * BREAKING_DISTANCE
+                )
+                self.return_pos[2] = RETURN_HEIGHT
+
+                return (POS_CMD, np.array([*self.return_pos, 0, BREAKING_DURATION]))
+            elif (
+                time.perf_counter() - self.close_ctrl_time > BREAKING_DURATION - 1
+                and self.return_status == 1
+            ):
+                print(f"close ctrl time past breaking duration")
+                self.return_status = 2
+
+                #self.return_pos[:2] = self.config.env.track.drones[self.controller_id].pos[:2]
+                self.return_pos[:2] = self.initial_obs[:2]
+                print(f"return position: {self.return_pos}")
+                return (POS_CMD, np.array([*self.return_pos, 0, RETURN_DURATION]))
+            elif (
+                time.perf_counter() - self.close_ctrl_time > BREAKING_DURATION - 1 + RETURN_DURATION
+                and self.return_status == 2
+            ):
+                self.return_status = 3
+                self.return_pos[2] = 0
+                # access to the landing function of the cf class is not implemented. Works this way too though.
+                # self.cf.land(self.config.env.track.drone.pos[2], LAND_DURATION)
+                return (POS_CMD, np.array([*self.return_pos, 0, LAND_DURATION]))
+
+            elif (
+                time.perf_counter() - self.close_ctrl_time
+                > BREAKING_DURATION - 1 + RETURN_DURATION + LAND_DURATION
+                and self.return_status == 3
+            ):
+                self.return_status = 4
+                return (KILL_CMD, None)
+            else:
+                return None
+
+        except Exception as e:
+            print(f"error: {e}")

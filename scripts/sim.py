@@ -84,7 +84,8 @@ def simulate(
         gui_timers = []
         for i in range(no_drones):
             info["id"] = i
-            controllers += [controller_clss[i](obs[i], info, config)]
+            #controllers += [controller_clss[i](obs[i], info, config)]
+            controllers += [controller_clss[i](obs[i], info)]
 
             if gui:
                 gui_timers += [
