@@ -78,8 +78,6 @@ def simulate(
     for _ in range(n_runs):  # Run n_runs episodes with the controller
         done = False
         obs, info = env.reset()
-        # TODO: make controller modular
-        # create controller for each drone -> for now all the drones have the same one!
         controllers = []
         gui_timers = []
         for i in range(no_drones):
