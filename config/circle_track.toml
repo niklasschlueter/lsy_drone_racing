@@ -5,8 +5,11 @@
 # | `level0.toml`       | *No*                      | *No*                        | *No*                   | Perfect knowledge |
 [controller]
 files = [#"/home/niklas/repos/master_thesis/my_lsy_drone_racing/controllers/mpcc_thrust_single_pot_func_thrust_dyn/thrust_controller.py", 
-"/home/niklas/repos/master_thesis/mpcc_repo/mpcc/control/thrust_controller.py",
-"/home/niklas/repos/master_thesis/mpcc_repo/mpcc/control/controller_single.py"]
+#"/home/niklas/repos/master_thesis/mpcc_repo/mpcc/control/thrust_controller.py",
+#"/home/niklas/repos/master_thesis/mpcc/mpcc/control/thrust_controller.py",
+"/home/niklas/repos/master_thesis/mpcc/mpcc/control/controller_single.py",
+"/home/niklas/repos/master_thesis/mpcc/mpcc/control/controller_single.py"]
+#"/home/niklas/repos/master_thesis/mpcc_repo/mpcc/control/controller_single.py"]
 #"/home/niklas/repos/master_thesis/my_lsy_drone_racing/controllers/mpcc_thrust_single_pot_func_thrust_dyn/controller_single.py"] # Put your controller file name here. Specifying a controller as argument to scripts will override this setting. Controllers are located in `lsy_drone_racing/control/`
 
 
