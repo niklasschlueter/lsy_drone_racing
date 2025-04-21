@@ -21,8 +21,6 @@ from lsy_drone_racing.control import Controller
 if TYPE_CHECKING:
     from numpy.typing import NDArray
 
-
-#from lsy_drone_racing.control.acados_quadrotor import create_ocp_solver
 import casadi as ca
 import scipy
 from acados_template import AcadosModel, AcadosOcp, AcadosOcpSolver, AcadosSim, AcadosSimSolver
@@ -272,6 +270,8 @@ class MPController(Controller):
         self.last_f_cmd = 0.3
         self.config = config
         self.finished = False
+        self.X = []
+        self.U = []
 
     def compute_control(
         self, obs: dict[str, NDArray[np.floating]], info: dict | None = None
@@ -324,6 +324,8 @@ class MPController(Controller):
 
         cmd = x1[10:14]
 
+        self.X += [xcurrent]
+        self.U += [cmd]
         return cmd
 
     def step_callback(
@@ -343,3 +345,4 @@ class MPController(Controller):
     def episode_callback(self):
         """Reset the integral error."""
         self._tick = 0
+        return self.X, self.U

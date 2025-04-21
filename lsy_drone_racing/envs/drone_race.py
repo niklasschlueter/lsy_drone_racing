@@ -12,6 +12,8 @@ from packaging.version import Version
 
 from lsy_drone_racing.envs.race_core import RaceCoreEnv, build_action_space, build_observation_space
 
+from lsy_drone_racing.utils.data_logging import DataLogger
+
 if TYPE_CHECKING:
     from jax import Array
     from ml_collections import ConfigDict
@@ -70,6 +72,8 @@ class DroneRaceEnv(RaceCoreEnv, Env):
         self.observation_space = build_observation_space(n_gates, n_obstacles)
         self.autoreset = False
 
+        self.data_logger = DataLogger("data/last_run_sim.csv", control_mode)
+
     def reset(self, seed: int | None = None, options: dict | None = None) -> tuple[dict, dict]:
         """Reset the environment.
 
@@ -97,6 +101,11 @@ class DroneRaceEnv(RaceCoreEnv, Env):
         obs, reward, terminated, truncated, info = self._step(action)
         obs = {k: v[0, 0] for k, v in obs.items()}
         info = {k: v[0, 0] for k, v in info.items()}
+
+        # custom
+        self.data_logger.log_data(
+                obs, action
+            ) 
         return obs, float(reward[0, 0]), bool(terminated[0, 0]), bool(truncated[0, 0]), info
 
 
