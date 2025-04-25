@@ -73,10 +73,10 @@ class AttitudeController(Controller):
             The collective thrust and orientation [t_des, r_des, p_des, y_des] as a numpy array.
         """
         action = np.zeros((1, 2, 4))
-        action[0, 0, :] = self.controller_0.compute_control(obs, info)
-        action[0, 1, :] = self.controller_1.compute_control(obs, info)
+        action[0, 0, :], ctrl_info_0 = self.controller_0.compute_control(obs, info)
+        action[0, 1, :], ctrl_info_1 = self.controller_1.compute_control(obs, info)
         print(f"action: {action}")
-        return action
+        return action, (ctrl_info_0, ctrl_info_1)
 
     def step_callback(
         self,

@@ -53,7 +53,6 @@ class AttitudeController:
 
         self._id = info["id"]
 
-
         goals = obs["gates_pos"][self._id]
         waypoints = [obs["pos"][self._id]] + goals
         approx_path_length = np.sum(np.linalg.norm(np.diff(waypoints)))
@@ -75,6 +74,10 @@ class AttitudeController:
         self.y_des = pos[1, :]
         self.z_des = pos[2, :]
         print(f"att controller instanciated with id {self._id}")
+
+        self.ctrl_info = {}
+        self.ctrl_info["trajectory"] = pos.T
+        self.ctrl_info["horizon"] = np.array([])
 
 
     def compute_control(
@@ -137,7 +140,7 @@ class AttitudeController:
         R_desired = np.vstack([x_axis_desired, y_axis_desired, z_axis_desired]).T
         euler_desired = R.from_matrix(R_desired).as_euler("xyz", degrees=False)
         thrust_desired, euler_desired
-        return np.concatenate([[thrust_desired], euler_desired], dtype=np.float32)
+        return np.concatenate([[thrust_desired], euler_desired], dtype=np.float32), self.ctrl_info
 
     def step_callback(
         self,

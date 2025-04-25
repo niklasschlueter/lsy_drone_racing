@@ -119,7 +119,6 @@ def simulate(
                             print(f"horizon: {horiz_pos}")
                             horiz_rot = rotation_matrix_from_points(horiz_pos[:-1, ...], horiz_pos[1:, ...])
                             render_trace(env.unwrapped.sim.viewer, horiz_pos, horiz_rot, color=[0.0, 1.0, 0.0, 1.0])
-                        #Uexit()
                     env.render()
             i += 1
 
