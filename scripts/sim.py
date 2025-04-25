@@ -81,9 +81,12 @@ def simulate(
         while True:
             curr_time = i / config.env.freq
 
+            print(f"compute control")
             action = controller.compute_control(obs, info)
+            print(f"step")
             obs, reward, terminated, truncated, info = env.step(action)
             # Update the controller internal state and models.
+            print(f"step callback")
             controller_finished = controller.step_callback(
                 action, obs, reward, terminated, truncated, info
             )

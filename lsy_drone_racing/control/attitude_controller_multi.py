@@ -19,6 +19,7 @@ from scipy.interpolate import CubicSpline
 from scipy.spatial.transform import Rotation as R
 
 from lsy_drone_racing.control import Controller
+import jax
 
 if TYPE_CHECKING:
     from numpy.typing import NDArray
@@ -75,6 +76,9 @@ class AttitudeController(Controller):
         self.y_des = cs_y(ts)
         self.z_des = cs_z(ts)
         self._finished = False
+        self.counter = 0
+        print(f"init")
+        print(f"config: {config}")
 
     def compute_control(
         self, obs: dict[str, NDArray[np.floating]], info: dict | None = None
@@ -89,7 +93,14 @@ class AttitudeController(Controller):
         Returns:
             The collective thrust and orientation [t_des, r_des, p_des, y_des] as a numpy array.
         """
-        print(f"obs: {obs}")
+        controller_id = self.counter % 2 
+        print(f"controller_id: {controller_id}")
+        pos = obs["pos"][controller_id]
+        vel = obs["vel"][controller_id]
+        quat = obs["quat"][controller_id]
+        jax.debug.print(f"pos: {pos}")
+
+
         i = min(self._tick, len(self.x_des) - 1)
         if i == len(self.x_des) - 1:  # Maximum duration reached
             self._finished = True
@@ -99,8 +110,8 @@ class AttitudeController(Controller):
         des_yaw = 0.0
 
         # Calculate the deviations from the desired trajectory
-        pos_error = des_pos - obs["pos"]
-        vel_error = des_vel - obs["vel"]
+        pos_error = des_pos - pos
+        vel_error = des_vel - vel
 
         # Update integral error
         self.i_error += pos_error * (1 / self.freq)
@@ -114,7 +125,7 @@ class AttitudeController(Controller):
         target_thrust[2] += self.drone_mass * self.g
 
         # Update z_axis to the current orientation of the drone
-        z_axis = R.from_quat(obs["quat"]).as_matrix()[:, 2]
+        z_axis = R.from_quat(quat).as_matrix()[:, 2]
 
         # update current thrust
         thrust_desired = target_thrust.dot(z_axis)
@@ -131,6 +142,7 @@ class AttitudeController(Controller):
         R_desired = np.vstack([x_axis_desired, y_axis_desired, z_axis_desired]).T
         euler_desired = R.from_matrix(R_desired).as_euler("xyz", degrees=False)
         thrust_desired, euler_desired
+        self.counter +=1
         return np.concatenate([[thrust_desired], euler_desired], dtype=np.float32)
 
     def step_callback(

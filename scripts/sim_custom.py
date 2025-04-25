@@ -19,8 +19,10 @@ import gymnasium
 from gymnasium.wrappers.jax_to_numpy import JaxToNumpy
 
 import numpy as np
+import mujoco
 
 from lsy_drone_racing.utils import load_config, load_controller
+from lsy_drone_racing.utils.utils import plot_mujoco_marker, render_trace, rotation_matrix_from_points
 
 if TYPE_CHECKING:
     from ml_collections import ConfigDict
@@ -77,6 +79,8 @@ def simulate(
     # shape #runs, #horizon, #states
     X = []
     U = []
+    traj_pos = None
+    traj_rot = None
 
     ep_times = []
     for _ in range(n_runs):  # Run n_runs episodes with the controller
@@ -89,7 +93,7 @@ def simulate(
         while True:
             curr_time = i / config.env.freq
 
-            action = controller.compute_control(obs, info)
+            action, ctrl_info = controller.compute_control(obs, info)
             obs, reward, terminated, truncated, info = env.step(action)
             # Update the controller internal state and models.
             controller_finished = controller.step_callback(
@@ -101,6 +105,17 @@ def simulate(
             # Synchronize the GUI.
             if config.sim.gui:
                 if ((i * fps) % config.env.freq) < fps:
+                    if i == 0:
+                        env.unwrapped.sim.max_visual_geom = 10_000
+                        traj_rot = []
+                        traj_pos = ctrl_info["trajectory"].T
+                        traj_rot = rotation_matrix_from_points(traj_pos[:-1, ...], traj_pos[1:, ...])
+                        print(traj_rot.as_matrix().shape)
+                        print(traj_pos.shape)
+                        
+                    if i > 1:
+                        render_trace(env.unwrapped.sim.viewer, traj_pos, traj_rot)
+                        #Uexit()
                     env.render()
             i += 1
 
