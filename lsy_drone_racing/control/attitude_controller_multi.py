@@ -22,7 +22,8 @@ from scipy.spatial.transform import Rotation as R
 from lsy_drone_racing.control import Controller
 import jax
 from lsy_drone_racing.control.attitude_controller_custom import AttitudeController as AttCtrl
-from mpcc.control.controller_single_wrapper import WrapperController as MPCC
+#from mpcc.control.controller_single_wrapper import WrapperController as MPCC
+from mpcc.control.controller_single import ControllerSingle as MPCC
 
 if TYPE_CHECKING:
     from numpy.typing import NDArray
@@ -75,7 +76,6 @@ class AttitudeController(Controller):
         action = np.zeros((1, 2, 4))
         action[0, 0, :], ctrl_info_0 = self.controller_0.compute_control(obs, info)
         action[0, 1, :], ctrl_info_1 = self.controller_1.compute_control(obs, info)
-        print(f"action: {action}")
         return action, (ctrl_info_0, ctrl_info_1)
 
     def step_callback(

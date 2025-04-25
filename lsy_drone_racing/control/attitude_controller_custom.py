@@ -93,19 +93,13 @@ class AttitudeController:
         Returns:
             The collective thrust and orientation [t_des, r_des, p_des, y_des] as a numpy array.
         """
-        #print(f"obs: {obs}")
-        print(f"comp ctrl")
         i = min(self._tick, len(self.x_des) - 1)
-        print(f"self.tick: {self._tick}")
-        print(f"i: {i}")
         if i == len(self.x_des) - 1:  # Maximum duration reached
             self._finished = True
 
         des_pos = np.array([self.x_des[i], self.y_des[i], self.z_des[i]])
-        print(f"des pos: {des_pos}")
         des_vel = np.zeros(3)
         des_yaw = 0.0
-        print(f"obspso: {obs['pos'][self._id]}")
 
         # Calculate the deviations from the desired trajectory
         pos_error = des_pos - obs["pos"][self._id]
@@ -156,7 +150,6 @@ class AttitudeController:
         Returns:
             True if the controller is finished, False otherwise.
         """
-        print(f"callback")
         self._tick += 1
         return self._finished
 

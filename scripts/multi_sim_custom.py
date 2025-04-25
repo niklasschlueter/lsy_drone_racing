@@ -89,7 +89,7 @@ def simulate(
         obs, info = env.reset()
         controller: Controller = controller_cls(obs, info, config)
         i = 0
-        fps = 60
+        fps = 30
 
         while True:
             curr_time = i / config.env.freq
@@ -98,17 +98,14 @@ def simulate(
             obs, reward, terminated, truncated, info = env.step(action)
             done = terminated | truncated
             # Update the controller internal state and models.
-            print(f"calling stap callback")
             controller.step_callback(action, obs, reward, terminated, truncated, info)
-            # Add up reward, collisions
-
             # Synchronize the GUI.
             if config.sim.gui:
                 if ((i * fps) % config.env.freq) < fps:
                     try:
                         if i == 0:
                             # Set number of visual elements in sim
-                            env.unwrapped.sim.max_visual_geom = 10_000
+                            env.unwrapped.sim.max_visual_geom = 1_000
                             # Create arrays for the trajectories we want to plot
                             traj_pos = []
                             traj_rot = []

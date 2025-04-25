@@ -76,7 +76,6 @@ def load_config(path: Path) -> ConfigDict:
         return ConfigDict(toml.load(f))
 
 
-
 def plot_mujoco_marker(env, pos, size=np.array([0.03, 0.03, 0.03]), rgba=np.array([0.8, 0.2, 0.2, 1.0])):
     env.unwrapped.sim.viewer.viewer.add_marker(
     type=mujoco.mjtGeom.mjGEOM_SPHERE, size=size, pos=pos, rgba=rgba)
@@ -88,7 +87,6 @@ def render_trace(viewer, pos, rot, color=[1.0, 0.0, 0.0, 1.0]):
         return
     
     assert isinstance(pos, np.ndarray)
-    print(pos.shape)
     n_trace = len(rot)
     sizes = np.zeros((n_trace, 3))
     sizes[..., 2] = np.linalg.norm(pos[1:] - pos[:-1], axis=-1)
@@ -106,7 +104,6 @@ def render_trace(viewer, pos, rot, color=[1.0, 0.0, 0.0, 1.0]):
 
 def rotation_matrix_from_points(p1, p2 ) -> R:
     z_axis = (v := p2 - p1) / np.linalg.norm(v, axis=-1, keepdims=True)
-    print(z_axis.shape)
     random_vector = np.random.rand(*z_axis.shape)
     x_axis = (v := np.cross(random_vector, z_axis)) / np.linalg.norm(v, axis=-1, keepdims=True)
     y_axis = np.cross(z_axis, x_axis)

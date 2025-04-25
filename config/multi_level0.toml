@@ -32,8 +32,8 @@ channel = 80
 physics = "analytical"
 
 camera_view = [5.0, -40.0, -40.0, 0.5, -1.0, 0.5]
-freq = 500                                        # Simulation frequency, in Hz
-attitude_freq = 500                               # Controller frequency, in Hz. This frequency is used to simulate the onboard controller, NOT for the environment's step function
+freq = 800                                        # Simulation frequency, in Hz
+attitude_freq = 800                               # Controller frequency, in Hz. This frequency is used to simulate the onboard controller, NOT for the environment's step function
 gui = true # Enable/disable PyBullet's GUI
 
 [env]
@@ -41,11 +41,11 @@ id = "MultiDroneRacing-v0"
 seed = 1337             # Random seed
 [[env.kwargs]]
 freq = 100              # Frequency of the environment's step function, in Hz
-sensor_range = 0.5     # Range at which the exact location of gates and obstacles become visible to the drone. Objects that are not in the drone's sensor range report their nominal position.
+sensor_range = 500.0     # Range at which the exact location of gates and obstacles become visible to the drone. Objects that are not in the drone's sensor range report their nominal position.
 control_mode = "attitude"  # Control mode of the environment. Can be either "state" or "attitude"
 [[env.kwargs]]
 freq = 100 
-sensor_range = 0.5
+sensor_range = 500.0 
 control_mode = "attitude"
 
 [[env.track.gates]]
