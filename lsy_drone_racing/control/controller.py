@@ -43,7 +43,7 @@ class Controller(ABC):
                 information such as disturbance configurations, randomizations, etc.
         """
 
-    @abstractmethod
+    #@abstractmethod
     def compute_control(
         self, obs: dict[str, NDArray[np.floating]], info: dict | None = None
     ) -> NDArray[np.floating]:

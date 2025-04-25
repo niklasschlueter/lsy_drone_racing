@@ -93,11 +93,12 @@ def simulate(
             curr_time = i / config.env.freq
 
             action = controller.compute_control(obs, info)
-            action = np.array([action] * n_drones * n_worlds, dtype=np.float32)
-            action[1, 0] += 0.2
+            #action = np.array([action] * n_drones * n_worlds, dtype=np.float32)
+            #action[1, 0] += 0.2
             obs, reward, terminated, truncated, info = env.step(action)
             done = terminated | truncated
             # Update the controller internal state and models.
+            print(f"calling stap callback")
             controller.step_callback(action, obs, reward, terminated, truncated, info)
             # Add up reward, collisions
 

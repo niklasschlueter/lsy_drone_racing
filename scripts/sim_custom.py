@@ -19,7 +19,6 @@ import gymnasium
 from gymnasium.wrappers.jax_to_numpy import JaxToNumpy
 
 import numpy as np
-import mujoco
 
 from lsy_drone_racing.utils import load_config, load_controller
 from lsy_drone_racing.utils.utils import plot_mujoco_marker, render_trace, rotation_matrix_from_points
@@ -76,13 +75,9 @@ def simulate(
     )
     env = JaxToNumpy(env)
 
-    # shape #runs, #horizon, #states
-    #X = []
-    #U = []
+    # traj. positions for plotting
     traj_pos = None
     traj_rot = None
-    #horiz_pos = None
-    #horiz_rot = None
 
     ep_times = []
     for _ in range(n_runs):  # Run n_runs episodes with the controller
@@ -108,16 +103,16 @@ def simulate(
             if config.sim.gui:
                 if ((i * fps) % config.env.freq) < fps:
                     if i == 0:
+                        # Calculate all the things to be able tot plot the trajectory
                         env.unwrapped.sim.max_visual_geom = 10_000
                         traj_rot = []
                         traj_pos = ctrl_info["trajectory"].T
                         traj_rot = rotation_matrix_from_points(traj_pos[:-1, ...], traj_pos[1:, ...])
-                        print(traj_rot.as_matrix().shape)
-                        print(traj_pos.shape)
                         
                     if i > 1:
                         # Render the trajectory
                         render_trace(env.unwrapped.sim.viewer, traj_pos, traj_rot)
+
                         # Render the horizon
                         if len(ctrl_info["horizon"]) > 1:
                             horiz_pos = ctrl_info["horizon"][: , :3]
@@ -128,17 +123,6 @@ def simulate(
                     env.render()
             i += 1
 
-            ## custom logging
-            #r = R.from_quat(q)
-            ## Convert to Euler angles in XYZ order
-            #rpy = r.as_euler('xyz', degrees=False)  # Set degrees=False for radians
-            #xcurrent = np.concatenate((obs["pos"], obs["vel"], rpy, np.array([last_f_collective, last_f_cmd]), last_rpy_cmd))
-            ## overwrite last cmds
-            #last_f_collective = f_collective
-            #last_f_cmd = f_cmd
-            #last_rpy_cmd = last_rpy_cmd
-
-
         controller.episode_callback()  # Update the controller internal state and models.
         #X.append(np.array(x))
         #U.append(np.array(u))
@@ -146,21 +130,6 @@ def simulate(
         controller.episode_reset()
         ep_times.append(curr_time if obs["target_gate"] == -1 else None)
 
-    # Problem: Runs have different lenghts.
-    # -> Quick fix: cut runs to length of run with shortest legths
-    # TODO: Fix
-    #min_len_x = np.min([np.shape(x)[0] for x in X])
-    #min_len_u = np.min([np.shape(u)[0] for u in U])
-    #X = [x[:min_len_x, ...] for x in X]
-    #U = [u[:min_len_u, ...] for u in U]
-    #X = np.array(X)
-    #U = np.array(U)
-    #print(f"shape X: {np.shape(X)}")
-    #print(f"shape U: {np.shape(U)}")
-    #with open("data/X.pkl", "wb") as f:
-    #    pickle.dump(X, f)
-    #with open("data/U.pkl", "wb") as f:
-    #    pickle.dump(U, f)
     # Close the environment
     env.close()
     return ep_times

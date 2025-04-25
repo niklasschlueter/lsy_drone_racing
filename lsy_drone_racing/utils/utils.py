@@ -111,16 +111,3 @@ def rotation_matrix_from_points(p1, p2 ) -> R:
     x_axis = (v := np.cross(random_vector, z_axis)) / np.linalg.norm(v, axis=-1, keepdims=True)
     y_axis = np.cross(z_axis, x_axis)
     return R.from_matrix(np.stack((x_axis, y_axis, z_axis), axis=-1))
-
-#def rotation_matrix_from_points(p1, p2) -> R:
-#    z_axis = (v := p2 - p1) / np.linalg.norm(p2 - p1)
-#    
-#    # Choose a reference vector that is NOT parallel to z_axis
-#    ref = np.array([1, 0, 0]) if abs(z_axis[0]) < 0.9 else np.array([0, 1, 0])
-#    
-#    x_axis = np.cross(ref, z_axis)
-#    x_axis /= np.linalg.norm(x_axis)
-#    
-#    y_axis = np.cross(z_axis, x_axis)
-#    
-#    return R.from_matrix(np.stack((x_axis, y_axis, z_axis), axis=-1))

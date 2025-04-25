@@ -9,6 +9,7 @@ Note that the trajectory uses pre-defined waypoints instead of dynamically gener
 """
 
 from __future__ import annotations  # Python 3.10 type hints
+import time
 
 import math
 from typing import TYPE_CHECKING
@@ -20,6 +21,8 @@ from scipy.spatial.transform import Rotation as R
 
 from lsy_drone_racing.control import Controller
 import jax
+from lsy_drone_racing.control.attitude_controller_custom import AttitudeController as AttCtrl
+#from mpcc.control.thrust_controller import ThrustController as AttCtrl
 
 if TYPE_CHECKING:
     from numpy.typing import NDArray
@@ -48,37 +51,13 @@ class AttitudeController(Controller):
         self.g = 9.81
         self._tick = 0
 
-        # Same waypoints as in the trajectory controller. Determined by trial and error.
-        waypoints = np.array(
-            [
-                [1.0, 1.5, 0.05],
-                [0.8, 1.0, 0.2],
-                [0.55, -0.3, 0.5],
-                [0.2, -1.3, 0.65],
-                [1.1, -0.85, 1.1],
-                [0.2, 0.5, 0.65],
-                [0.0, 1.2, 0.525],
-                [0.0, 1.2, 1.1],
-                [-0.5, 0.0, 1.1],
-                [-0.5, -0.5, 1.1],
-            ]
-        )
-        # Scale trajectory between 0 and 1
-        ts = np.linspace(0, 1, np.shape(waypoints)[0])
-        cs_x = CubicSpline(ts, waypoints[:, 0])
-        cs_y = CubicSpline(ts, waypoints[:, 1])
-        cs_z = CubicSpline(ts, waypoints[:, 2])
-
-        des_completion_time = 15
-        ts = np.linspace(0, 1, int(self.freq * des_completion_time))
-
-        self.x_des = cs_x(ts)
-        self.y_des = cs_y(ts)
-        self.z_des = cs_z(ts)
         self._finished = False
-        self.counter = 0
-        print(f"init")
-        print(f"config: {config}")
+
+        info["id"] = 0
+        self.controller_0 = AttCtrl(obs, info, config)
+        info["id"] = 1
+        self.controller_1 = AttCtrl(obs, info, config)
+
 
     def compute_control(
         self, obs: dict[str, NDArray[np.floating]], info: dict | None = None
@@ -93,57 +72,11 @@ class AttitudeController(Controller):
         Returns:
             The collective thrust and orientation [t_des, r_des, p_des, y_des] as a numpy array.
         """
-        controller_id = self.counter % 2 
-        print(f"controller_id: {controller_id}")
-        pos = obs["pos"][controller_id]
-        vel = obs["vel"][controller_id]
-        quat = obs["quat"][controller_id]
-        jax.debug.print(f"pos: {pos}")
-
-
-        i = min(self._tick, len(self.x_des) - 1)
-        if i == len(self.x_des) - 1:  # Maximum duration reached
-            self._finished = True
-
-        des_pos = np.array([self.x_des[i], self.y_des[i], self.z_des[i]])
-        des_vel = np.zeros(3)
-        des_yaw = 0.0
-
-        # Calculate the deviations from the desired trajectory
-        pos_error = des_pos - pos
-        vel_error = des_vel - vel
-
-        # Update integral error
-        self.i_error += pos_error * (1 / self.freq)
-        self.i_error = np.clip(self.i_error, -self.ki_range, self.ki_range)
-
-        # Compute target thrust
-        target_thrust = np.zeros(3)
-        target_thrust += self.kp * pos_error
-        target_thrust += self.ki * self.i_error
-        target_thrust += self.kd * vel_error
-        target_thrust[2] += self.drone_mass * self.g
-
-        # Update z_axis to the current orientation of the drone
-        z_axis = R.from_quat(quat).as_matrix()[:, 2]
-
-        # update current thrust
-        thrust_desired = target_thrust.dot(z_axis)
-        thrust_desired = max(thrust_desired, 0.3 * self.drone_mass * self.g)
-        thrust_desired = min(thrust_desired, 1.8 * self.drone_mass * self.g)
-
-        # update z_axis_desired
-        z_axis_desired = target_thrust / np.linalg.norm(target_thrust)
-        x_c_des = np.array([math.cos(des_yaw), math.sin(des_yaw), 0.0])
-        y_axis_desired = np.cross(z_axis_desired, x_c_des)
-        y_axis_desired /= np.linalg.norm(y_axis_desired)
-        x_axis_desired = np.cross(y_axis_desired, z_axis_desired)
-
-        R_desired = np.vstack([x_axis_desired, y_axis_desired, z_axis_desired]).T
-        euler_desired = R.from_matrix(R_desired).as_euler("xyz", degrees=False)
-        thrust_desired, euler_desired
-        self.counter +=1
-        return np.concatenate([[thrust_desired], euler_desired], dtype=np.float32)
+        action = np.zeros((1, 2, 4))
+        action[0, 0, :] = self.controller_0.compute_control(obs, info)
+        action[0, 1, :] = self.controller_1.compute_control(obs, info)
+        print(f"action: {action}")
+        return action
 
     def step_callback(
         self,
@@ -160,9 +93,11 @@ class AttitudeController(Controller):
             True if the controller is finished, False otherwise.
         """
         self._tick += 1
+        self.controller_0.step_callback(action, obs, reward, terminated, truncated, info)
+        self.controller_1.step_callback(action, obs, reward, terminated, truncated, info)
         return self._finished
 
     def episode_callback(self):
         """Reset the integral error."""
-        self.i_error[:] = 0
+        #self.i_error[:] = 0
         self._tick = 0
