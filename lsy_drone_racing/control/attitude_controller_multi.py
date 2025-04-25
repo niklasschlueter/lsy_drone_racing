@@ -22,7 +22,7 @@ from scipy.spatial.transform import Rotation as R
 from lsy_drone_racing.control import Controller
 import jax
 from lsy_drone_racing.control.attitude_controller_custom import AttitudeController as AttCtrl
-#from mpcc.control.thrust_controller import ThrustController as AttCtrl
+from mpcc.control.controller_single_wrapper import WrapperController as MPCC
 
 if TYPE_CHECKING:
     from numpy.typing import NDArray
@@ -56,7 +56,7 @@ class AttitudeController(Controller):
         info["id"] = 0
         self.controller_0 = AttCtrl(obs, info, config)
         info["id"] = 1
-        self.controller_1 = AttCtrl(obs, info, config)
+        self.controller_1 = MPCC(obs, info, config)
 
 
     def compute_control(

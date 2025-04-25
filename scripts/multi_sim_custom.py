@@ -95,8 +95,6 @@ def simulate(
             curr_time = i / config.env.freq
 
             action, ctrl_info = controller.compute_control(obs, info)
-            #action = np.array([action] * n_drones * n_worlds, dtype=np.float32)
-            #action[1, 0] += 0.2
             obs, reward, terminated, truncated, info = env.step(action)
             done = terminated | truncated
             # Update the controller internal state and models.
@@ -135,7 +133,7 @@ def simulate(
 
                                 # Render the horizon
                                 if len(ctrl_info[_id]["horizon"]) > 1:
-                                    horiz_pos = ctrl_info["horizon"][_id][: , :3]
+                                    horiz_pos = ctrl_info[_id]["horizon"][: , :3]
                                     #print(f"horizon: {horiz_pos}")
                                     horiz_rot = rotation_matrix_from_points(horiz_pos[:-1, ...], horiz_pos[1:, ...])
                                     render_trace(env.unwrapped.sim.viewer, horiz_pos, horiz_rot, color=[0.0, 1.0, 0.0, 1.0])
