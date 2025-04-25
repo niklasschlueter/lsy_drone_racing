@@ -36,9 +36,22 @@ gui = true # Enable/disable PyBullet's GUI
 [env]
 id = "DroneRacing-v0"   # "DroneRacing-v0" for single races, "MultiDroneRacing-v0" for multi-drone races. Each environment also implements a vector-environment for faster training
 seed = 1337             # Random seed
-freq = 200               # Frequency of the environment's step function, in Hz
+freq = 100               # Frequency of the environment's step function, in Hz
 sensor_range = 50.0      # Range at which the exact location of gates and obstacles become visible to the drone. Objects that are not in the drone's sensor range report their nominal position.
 control_mode = "attitude"  # Control mode of the environment. Can be either "state" or "attitude"
+
+[[env.track.gates]]
+pos = [1.0, 1.0, 0.56]
+rpy = [0.0, 0.0, 1.57]
+[[env.track.gates]]
+pos = [-1.0, 1.0, 1.11]
+rpy = [0.0, 0.0, 1.57]
+[[env.track.gates]]
+pos = [-1.0, -1.0, 0.56]
+rpy = [0.0, 0.0, -1.57]
+[[env.track.gates]]
+pos = [1.0, -1.0, 1.11]
+rpy = [0.0, 0.0, -1.57]
 
 [[env.track.gates]]
 pos = [1.0, 1.0, 0.56]

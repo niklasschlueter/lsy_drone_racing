@@ -37,7 +37,7 @@ logger = logging.getLogger(__name__)
 def simulate(
     config: str = "level0.toml",
     controller: str | None = None,
-    n_runs: int = 4,
+    n_runs: int = 1,
     gui: bool | None = None,
 ) -> list[float]:
     """Evaluate the drone controller over multiple episodes.
@@ -77,10 +77,12 @@ def simulate(
     env = JaxToNumpy(env)
 
     # shape #runs, #horizon, #states
-    X = []
-    U = []
+    #X = []
+    #U = []
     traj_pos = None
     traj_rot = None
+    #horiz_pos = None
+    #horiz_rot = None
 
     ep_times = []
     for _ in range(n_runs):  # Run n_runs episodes with the controller
@@ -114,7 +116,14 @@ def simulate(
                         print(traj_pos.shape)
                         
                     if i > 1:
+                        # Render the trajectory
                         render_trace(env.unwrapped.sim.viewer, traj_pos, traj_rot)
+                        # Render the horizon
+                        if len(ctrl_info["horizon"]) > 1:
+                            horiz_pos = ctrl_info["horizon"][: , :3]
+                            print(f"horizon: {horiz_pos}")
+                            horiz_rot = rotation_matrix_from_points(horiz_pos[:-1, ...], horiz_pos[1:, ...])
+                            render_trace(env.unwrapped.sim.viewer, horiz_pos, horiz_rot, color=[0.0, 1.0, 0.0, 1.0])
                         #Uexit()
                     env.render()
             i += 1
@@ -130,9 +139,9 @@ def simulate(
             #last_rpy_cmd = last_rpy_cmd
 
 
-        x, u = controller.episode_callback()  # Update the controller internal state and models.
-        X.append(np.array(x))
-        U.append(np.array(u))
+        controller.episode_callback()  # Update the controller internal state and models.
+        #X.append(np.array(x))
+        #U.append(np.array(u))
         log_episode_stats(obs, info, config, curr_time)
         controller.episode_reset()
         ep_times.append(curr_time if obs["target_gate"] == -1 else None)
@@ -140,18 +149,18 @@ def simulate(
     # Problem: Runs have different lenghts.
     # -> Quick fix: cut runs to length of run with shortest legths
     # TODO: Fix
-    min_len_x = np.min([np.shape(x)[0] for x in X])
-    min_len_u = np.min([np.shape(u)[0] for u in U])
-    X = [x[:min_len_x, ...] for x in X]
-    U = [u[:min_len_u, ...] for u in U]
-    X = np.array(X)
-    U = np.array(U)
-    print(f"shape X: {np.shape(X)}")
-    print(f"shape U: {np.shape(U)}")
-    with open("data/X.pkl", "wb") as f:
-        pickle.dump(X, f)
-    with open("data/U.pkl", "wb") as f:
-        pickle.dump(U, f)
+    #min_len_x = np.min([np.shape(x)[0] for x in X])
+    #min_len_u = np.min([np.shape(u)[0] for u in U])
+    #X = [x[:min_len_x, ...] for x in X]
+    #U = [u[:min_len_u, ...] for u in U]
+    #X = np.array(X)
+    #U = np.array(U)
+    #print(f"shape X: {np.shape(X)}")
+    #print(f"shape U: {np.shape(U)}")
+    #with open("data/X.pkl", "wb") as f:
+    #    pickle.dump(X, f)
+    #with open("data/U.pkl", "wb") as f:
+    #    pickle.dump(U, f)
     # Close the environment
     env.close()
     return ep_times
