@@ -136,7 +136,7 @@ def simulate(
                                     render_trace(env.unwrapped.sim.viewer, horiz_pos, horiz_rot, color=[0.0, 1.0, 0.0, 1.0])
 
                                 # Render opp prediction
-                                print(f"opp pred: {ctrl_info[_id]['opp_prediction']}")
+                                #print(f"opp pred: {ctrl_info[_id]['opp_prediction']}")
                                 if len(ctrl_info[_id]["opp_prediction"]) > 1:
                                     horiz_pos = ctrl_info[_id]["opp_prediction"][: , :3]
                                     horiz_rot = rotation_matrix_from_points(horiz_pos[:-1, ...], horiz_pos[1:, ...])

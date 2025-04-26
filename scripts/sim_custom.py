@@ -105,13 +105,17 @@ def simulate(
                     if i == 0:
                         # Calculate all the things to be able tot plot the trajectory
                         env.unwrapped.sim.max_visual_geom = 10_000
-                        traj_rot = []
-                        traj_pos = ctrl_info["trajectory"].T
-                        traj_rot = rotation_matrix_from_points(traj_pos[:-1, ...], traj_pos[1:, ...])
+                        if len(ctrl_info["trajectory"]) > 0:
+                            traj_rot = []
+                            traj_pos = ctrl_info["trajectory"]
+                            print(f"shape traj pos: {np.shape(traj_pos)}")
+                            print(f"traj_pos: {traj_pos}")
+                            traj_rot = rotation_matrix_from_points(traj_pos[:-1, ...], traj_pos[1:, ...])
                         
                     if i > 1:
                         # Render the trajectory
-                        render_trace(env.unwrapped.sim.viewer, traj_pos, traj_rot)
+                        if traj_pos is not None:
+                            render_trace(env.unwrapped.sim.viewer, traj_pos, traj_rot)
 
                         # Render the horizon
                         if len(ctrl_info["horizon"]) > 1:
