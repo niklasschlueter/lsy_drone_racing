@@ -95,6 +95,7 @@ def simulate(
             curr_time = i / config.env.freq
 
             action, ctrl_info = controller.compute_control(obs, info)
+            #print(f"ctrl_info: {ctrl_info}")
             obs, reward, terminated, truncated, info = env.step(action)
             done = terminated | truncated
             # Update the controller internal state and models.
@@ -131,9 +132,15 @@ def simulate(
                                 # Render the horizon
                                 if len(ctrl_info[_id]["horizon"]) > 1:
                                     horiz_pos = ctrl_info[_id]["horizon"][: , :3]
-                                    #print(f"horizon: {horiz_pos}")
                                     horiz_rot = rotation_matrix_from_points(horiz_pos[:-1, ...], horiz_pos[1:, ...])
                                     render_trace(env.unwrapped.sim.viewer, horiz_pos, horiz_rot, color=[0.0, 1.0, 0.0, 1.0])
+
+                                # Render opp prediction
+                                print(f"opp pred: {ctrl_info[_id]['opp_prediction']}")
+                                if len(ctrl_info[_id]["opp_prediction"]) > 1:
+                                    horiz_pos = ctrl_info[_id]["opp_prediction"][: , :3]
+                                    horiz_rot = rotation_matrix_from_points(horiz_pos[:-1, ...], horiz_pos[1:, ...])
+                                    render_trace(env.unwrapped.sim.viewer, horiz_pos, horiz_rot, color=[1.0, 1.0, 0.0, 1.0])
 
                         env.render()
                     # TODO: JaxToNumpy not working with None (returned by env.render()). Open issue

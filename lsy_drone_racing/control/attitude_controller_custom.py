@@ -78,6 +78,7 @@ class AttitudeController:
         self.ctrl_info = {}
         self.ctrl_info["trajectory"] = pos.T
         self.ctrl_info["horizon"] = np.array([])
+        self.ctrl_info["opp_prediction"] = np.array([])
 
 
     def compute_control(
