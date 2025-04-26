@@ -38,7 +38,7 @@ class MultiDroneRaceEnv(RaceCoreEnv, Env):
         disturbances: ConfigDict | None = None,
         randomizations: ConfigDict | None = None,
         seed: int = 1337,
-        max_episode_steps: int = 1500,
+        max_episode_steps: int = 15000,
         device: Literal["cpu", "gpu"] = "cpu",
     ):
         """Initialize the multi-agent drone racing environment.

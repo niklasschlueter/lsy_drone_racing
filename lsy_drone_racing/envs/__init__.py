@@ -21,7 +21,7 @@ register(
     id="DroneRacing-v0",
     entry_point="lsy_drone_racing.envs.drone_race:DroneRaceEnv",
     vector_entry_point="lsy_drone_racing.envs.drone_race:VecDroneRaceEnv",
-    max_episode_steps=1500,  # 30 seconds * 50 Hz,
+    max_episode_steps=15000,  # 30 seconds * 50 Hz,
     disable_env_checker=True,  # Remove warnings about 2D observations
 )
 
@@ -29,7 +29,7 @@ register(
     id="MultiDroneRacing-v0",
     entry_point="lsy_drone_racing.envs.multi_drone_race:MultiDroneRaceEnv",
     vector_entry_point="lsy_drone_racing.envs.multi_drone_race:VecMultiDroneRaceEnv",
-    max_episode_steps=1500,
+    max_episode_steps=15000,
     disable_env_checker=True,
 )
 
