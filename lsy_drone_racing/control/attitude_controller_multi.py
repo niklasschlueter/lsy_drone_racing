@@ -114,3 +114,9 @@ class AttitudeController(Controller):
         self.controller_1.episode_callback()
         return
 
+    def episode_reset(self):
+        print(f"episode reset multi ctrl called")
+        persistent_info_0 = self.controller_0.episode_reset()
+        persistent_info_1 = self.controller_1.episode_reset()
+        return (persistent_info_0, persistent_info_1)
+

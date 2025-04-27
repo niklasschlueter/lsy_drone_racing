@@ -85,9 +85,13 @@ def simulate(
     env = JaxToNumpy(env)
     n_drones, n_worlds = env.unwrapped.sim.n_drones, env.unwrapped.sim.n_worlds
 
-    controller = None
+    # If we want to retain information between episodes. 
+    persistent_info = ({}, {}) 
+    #controller = None
     for n_run in range(n_runs):  # Run n_runs episodes with the controller
         obs, info = env.reset()
+        print(f"persistent info: {persistent_info}")
+        info["persistent"] = persistent_info
         #if n_run == 0:
         controller: Controller = controller_cls(obs, info, config)
         #else:
@@ -158,7 +162,7 @@ def simulate(
 
         controller.episode_callback()  # Update the controller internal state and models.
         log_episode_stats(obs, info, config, curr_time)
-        controller.episode_reset()
+        persistent_info = controller.episode_reset()
 
     # Close the environment
     env.close()
