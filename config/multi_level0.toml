@@ -40,11 +40,11 @@ gui = true # Enable/disable PyBullet's GUI
 id = "MultiDroneRacing-v0"
 seed = 1337             # Random seed
 [[env.kwargs]]
-freq = 200              # Frequency of the environment's step function, in Hz
+freq = 100              # Frequency of the environment's step function, in Hz
 sensor_range = 500.0     # Range at which the exact location of gates and obstacles become visible to the drone. Objects that are not in the drone's sensor range report their nominal position.
 control_mode = "attitude"  # Control mode of the environment. Can be either "state" or "attitude"
 [[env.kwargs]]
-freq = 200 
+freq = 100 
 sensor_range = 500.0 
 control_mode = "attitude"
 
@@ -85,7 +85,6 @@ vel = [0, 0, 0]
 ang_vel = [0, 0, 0]
 [[env.track.drones]]
 pos = [2.0, 1.2, 0.07]
-#pos = [1.0, 1.5, 0.07]
 rpy = [0, 0, 0]
 vel = [0, 0, 0]
 ang_vel = [0, 0, 0]

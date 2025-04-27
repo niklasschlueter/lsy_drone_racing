@@ -59,10 +59,10 @@ class AttitudeController(Controller):
 
         info["id"] = 0
         self.controller_0 = AttCtrl(obs, info, config)
-        info["id"] = 1
-        self.controller_1 = LearningController(obs, info, config)
         #info["id"] = 1
-        #self.controller_1 = MPCC(obs, info, config)
+        #self.controller_1 = LearningController(obs, info, config)
+        info["id"] = 1
+        self.controller_1 = MPCC(obs, info, config)
 
 
     def compute_control(
@@ -98,8 +98,12 @@ class AttitudeController(Controller):
             True if the controller is finished, False otherwise.
         """
         self._tick += 1
-        self.controller_0.step_callback(action, obs, reward, terminated, truncated, info)
-        self.controller_1.step_callback(action, obs, reward, terminated, truncated, info)
+        ctrl_finished_0 = self.controller_0.step_callback(action, obs, reward, terminated, truncated, info)
+        ctrl_finished_1 = self.controller_1.step_callback(action, obs, reward, terminated, truncated, info)
+        #print(f"finished 0: {ctrl_finished_0}, finished 1: {ctrl_finished_1}")
+        # Make sure this makes sense
+        #self._finished = ctrl_finished_0 & ctrl_finished_1
+        self._finished = ctrl_finished_0 | ctrl_finished_1
         return self._finished
 
     def episode_callback(self):

@@ -93,13 +93,12 @@ def simulate(
 
         while True:
             curr_time = i / config.env.freq
-
             action, ctrl_info = controller.compute_control(obs, info)
             #print(f"ctrl_info: {ctrl_info}")
             obs, reward, terminated, truncated, info = env.step(action)
-            done = terminated | truncated
             # Update the controller internal state and models.
-            controller.step_callback(action, obs, reward, terminated, truncated, info)
+            controller_finished = controller.step_callback(action, obs, reward, terminated, truncated, info)
+            done = terminated | truncated | controller_finished
             # Synchronize the GUI.
             if config.sim.gui:
                 if ((i * fps) % config.env.freq) < fps:
