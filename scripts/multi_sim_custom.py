@@ -35,7 +35,7 @@ logger = logging.getLogger(__name__)
 def simulate(
     config: str = "multi_level0.toml",
     controller: str | None = None,
-    n_runs: int = 1,
+    n_runs: int = 4,
     gui: bool | None = None,
 ) -> list[float]:
     """Evaluate the drone controller over multiple episodes.
@@ -85,9 +85,14 @@ def simulate(
     env = JaxToNumpy(env)
     n_drones, n_worlds = env.unwrapped.sim.n_drones, env.unwrapped.sim.n_worlds
 
-    for _ in range(n_runs):  # Run n_runs episodes with the controller
+    controller = None
+    for n_run in range(n_runs):  # Run n_runs episodes with the controller
         obs, info = env.reset()
+        #if n_run == 0:
         controller: Controller = controller_cls(obs, info, config)
+        #else:
+        #    # TODO: This should be some form of episode reset
+        #    controller.episode_reset()
         i = 0
         fps = 30
 

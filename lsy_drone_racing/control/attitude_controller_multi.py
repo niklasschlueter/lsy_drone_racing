@@ -108,5 +108,9 @@ class AttitudeController(Controller):
 
     def episode_callback(self):
         """Reset the integral error."""
-        #self.i_error[:] = 0
         self._tick = 0
+        print(f"Episode Callback")
+        self.controller_0.episode_callback()
+        self.controller_1.episode_callback()
+        return
+

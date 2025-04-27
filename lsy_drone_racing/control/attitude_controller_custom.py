@@ -158,3 +158,5 @@ class AttitudeController:
         """Reset the integral error."""
         self.i_error[:] = 0
         self._tick = 0
+        print(f"Episode Callback AttitudeController.")
+
