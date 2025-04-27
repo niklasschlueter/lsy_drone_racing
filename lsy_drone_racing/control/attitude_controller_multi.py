@@ -25,6 +25,9 @@ from lsy_drone_racing.control.attitude_controller_custom import AttitudeControll
 #from mpcc.control.controller_single_wrapper import WrapperController as MPCC
 from mpcc.control.controller_single import ControllerSingle as MPCC
 
+from inv_rl.attitude_mpc_wrapper import LearningController
+#.control.quadrotor.attitude_mpc import MPController
+
 if TYPE_CHECKING:
     from numpy.typing import NDArray
 
@@ -57,7 +60,9 @@ class AttitudeController(Controller):
         info["id"] = 0
         self.controller_0 = AttCtrl(obs, info, config)
         info["id"] = 1
-        self.controller_1 = MPCC(obs, info, config)
+        self.controller_1 = LearningController(obs, info, config)
+        #info["id"] = 1
+        #self.controller_1 = MPCC(obs, info, config)
 
 
     def compute_control(
