@@ -106,12 +106,14 @@ class AttitudeController(Controller):
         self._finished = ctrl_finished_0 | ctrl_finished_1
         return self._finished
 
-    def episode_callback(self):
+    def episode_callback(self, **kwargs):
         """Reset the integral error."""
         self._tick = 0
         print(f"Episode Callback")
-        self.controller_0.episode_callback()
-        self.controller_1.episode_callback()
+        # This is the learning controller that is used to control the other drone
+        X, U = self.controller_0.episode_callback()
+        # This is the MPCC
+        self.controller_1.episode_callback(X=X, U=U)
         return
 
     def episode_reset(self):
