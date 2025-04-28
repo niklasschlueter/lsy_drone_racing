@@ -163,6 +163,7 @@ def simulate(
         controller.episode_callback()  # Update the controller internal state and models.
         log_episode_stats(obs, info, config, curr_time)
         persistent_info = controller.episode_reset()
+        print(f"persistent info in outside loop: {persistent_info}")
 
     # Close the environment
     env.close()
