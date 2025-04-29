@@ -91,7 +91,10 @@ def simulate(
     for n_run in range(n_runs):  # Run n_runs episodes with the controller
         obs, info = env.reset()
         print(f"persistent info: {persistent_info}")
+        # For information that is persistent between episodes.
         info["persistent"] = persistent_info
+        # Pass the episode number.
+        info["n_run"] = n_run
         #if n_run == 0:
         controller: Controller = controller_cls(obs, info, config)
         #else:

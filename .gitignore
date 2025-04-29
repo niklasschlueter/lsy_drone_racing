@@ -13,3 +13,4 @@ plots/
 c_generated_code/
 **/c_generated_code*/
 **/data/
+**/.jax_cache/*

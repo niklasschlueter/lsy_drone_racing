@@ -102,8 +102,8 @@ class AttitudeController(Controller):
         ctrl_finished_1 = self.controller_1.step_callback(action, obs, reward, terminated, truncated, info)
         #print(f"finished 0: {ctrl_finished_0}, finished 1: {ctrl_finished_1}")
         # Make sure this makes sense
-        #self._finished = ctrl_finished_0 & ctrl_finished_1
-        self._finished = ctrl_finished_0 | ctrl_finished_1
+        self._finished = ctrl_finished_0 & ctrl_finished_1
+        #self._finished = ctrl_finished_0 | ctrl_finished_1
         return self._finished
 
     def episode_callback(self, **kwargs):
