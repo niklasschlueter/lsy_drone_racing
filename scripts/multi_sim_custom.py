@@ -26,8 +26,7 @@ if TYPE_CHECKING:
     from lsy_drone_racing.control.controller import Controller
     from lsy_drone_racing.envs.multi_drone_race import MultiDroneRacingEnv
 
-from lsy_drone_racing.utils.utils import plot_mujoco_marker, render_trace, rotation_matrix_from_points
-
+from lsy_drone_racing.utils.utils import render_trace, rotation_matrix_from_points
 
 logger = logging.getLogger(__name__)
 
@@ -85,31 +84,27 @@ def simulate(
     env = JaxToNumpy(env)
     n_drones, n_worlds = env.unwrapped.sim.n_drones, env.unwrapped.sim.n_worlds
 
-    # If we want to retain information between episodes. 
-    persistent_info = ({}, {}) 
-    #controller = None
+    # If we want to retain information between episodes.
+    persistent_info = ({}, {})
+    # controller = None
     for n_run in range(n_runs):  # Run n_runs episodes with the controller
         obs, info = env.reset()
-        print(f"persistent info: {persistent_info}")
         # For information that is persistent between episodes.
         info["persistent"] = persistent_info
         # Pass the episode number.
         info["n_run"] = n_run
-        #if n_run == 0:
         controller: Controller = controller_cls(obs, info, config)
-        #else:
-        #    # TODO: This should be some form of episode reset
-        #    controller.episode_reset()
         i = 0
         fps = 30
 
         while True:
             curr_time = i / config.env.freq
             action, ctrl_info = controller.compute_control(obs, info)
-            #print(f"ctrl_info: {ctrl_info}")
             obs, reward, terminated, truncated, info = env.step(action)
             # Update the controller internal state and models.
-            controller_finished = controller.step_callback(action, obs, reward, terminated, truncated, info)
+            controller_finished = controller.step_callback(
+                action, obs, reward, terminated, truncated, info
+            )
             done = terminated | truncated | controller_finished
             # Synchronize the GUI.
             if config.sim.gui:
@@ -131,27 +126,45 @@ def simulate(
                                 indices = np.linspace(0, len(traj) - 1, target_len).astype(int)
                                 traj = traj[indices]
                                 # Calculate all the things to be able to plot the trajectory
-                                traj_pos.append(traj)#ctrl_info[_id]["trajectory"])#.T
-                                traj_rot.append(rotation_matrix_from_points(traj_pos[-1][:-1, ...], traj_pos[-1][1:, ...]))
-
+                                traj_pos.append(traj)  # ctrl_info[_id]["trajectory"])#.T
+                                traj_rot.append(
+                                    rotation_matrix_from_points(
+                                        traj_pos[-1][:-1, ...], traj_pos[-1][1:, ...]
+                                    )
+                                )
                         if i > 1:
                             # Render the trajectory
                             for _id, color in zip(range(n_drones), colors):
                                 # Calculate all the things to be able tot plot the trajectory
-                                render_trace(env.unwrapped.sim.viewer, traj_pos[_id], traj_rot[_id], color)
+                                render_trace(
+                                    env.unwrapped.sim.viewer, traj_pos[_id], traj_rot[_id], color
+                                )
 
                                 # Render the horizon
                                 if len(ctrl_info[_id]["horizon"]) > 1:
-                                    horiz_pos = ctrl_info[_id]["horizon"][: , :3]
-                                    horiz_rot = rotation_matrix_from_points(horiz_pos[:-1, ...], horiz_pos[1:, ...])
-                                    render_trace(env.unwrapped.sim.viewer, horiz_pos, horiz_rot, color=[0.0, 1.0, 0.0, 1.0])
+                                    horiz_pos = ctrl_info[_id]["horizon"][:, :3]
+                                    horiz_rot = rotation_matrix_from_points(
+                                        horiz_pos[:-1, ...], horiz_pos[1:, ...]
+                                    )
+                                    render_trace(
+                                        env.unwrapped.sim.viewer,
+                                        horiz_pos,
+                                        horiz_rot,
+                                        color=[0.0, 1.0, 0.0, 1.0],
+                                    )
 
                                 # Render opp prediction
-                                #print(f"opp pred: {ctrl_info[_id]['opp_prediction']}")
                                 if len(ctrl_info[_id]["opp_prediction"]) > 1:
-                                    horiz_pos = ctrl_info[_id]["opp_prediction"][: , :3]
-                                    horiz_rot = rotation_matrix_from_points(horiz_pos[:-1, ...], horiz_pos[1:, ...])
-                                    render_trace(env.unwrapped.sim.viewer, horiz_pos, horiz_rot, color=[1.0, 1.0, 0.0, 1.0])
+                                    horiz_pos = ctrl_info[_id]["opp_prediction"][:, :3]
+                                    horiz_rot = rotation_matrix_from_points(
+                                        horiz_pos[:-1, ...], horiz_pos[1:, ...]
+                                    )
+                                    render_trace(
+                                        env.unwrapped.sim.viewer,
+                                        horiz_pos,
+                                        horiz_rot,
+                                        color=[1.0, 1.0, 0.0, 1.0],
+                                    )
 
                         env.render()
                     # TODO: JaxToNumpy not working with None (returned by env.render()). Open issue
@@ -166,7 +179,6 @@ def simulate(
         controller.episode_callback()  # Update the controller internal state and models.
         log_episode_stats(obs, info, config, curr_time)
         persistent_info = controller.episode_reset()
-        print(f"persistent info in outside loop: {persistent_info}")
 
     # Close the environment
     env.close()

@@ -67,13 +67,10 @@ class AttitudeController:
             R.from_quat(obs["gates_quat"][self._id]).as_euler("xyz", degrees=False),
             sample_points=approx_path_length / 0.3 * self.freq
         )
-        print(f"pos: {pos}")
 
         self.x_des = pos[0, :]
-        print(f"shape xde: {np.shape(self.x_des)}")
         self.y_des = pos[1, :]
         self.z_des = pos[2, :]
-        print(f"att controller instanciated with id {self._id}")
 
         self.ctrl_info = {}
         self.ctrl_info["trajectory"] = pos.T
@@ -158,7 +155,6 @@ class AttitudeController:
         """Reset the integral error."""
         self.i_error[:] = 0
         self._tick = 0
-        print(f"Episode Callback AttitudeController.")
     
     def episode_reset(self):
         return {}

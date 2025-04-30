@@ -207,8 +207,8 @@ def create_ocp_solver(Tf, N, verbose=False):
 
     # set prediction horizon
     ocp.solver_options.tf = Tf
-
-    acados_ocp_solver = AcadosOcpSolver(ocp, json_file="lsy_example_mpc.json", verbose=verbose)
+    
+    acados_ocp_solver = AcadosOcpSolver(ocp, json_file="lsy_example_mpc.json", verbose=False)
 
     return acados_ocp_solver, ocp
 
