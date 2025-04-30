@@ -57,10 +57,10 @@ class AttitudeController(Controller):
 
         self._finished = False
 
-        #info["id"] = 0
-        #self.controller_0 = AttCtrl(obs, info, config)
         info["id"] = 0
-        self.controller_0 = LearningController(obs, info, config)
+        self.controller_0 = AttCtrl(obs, info, config)
+        #info["id"] = 0
+        #self.controller_0 = LearningController(obs, info, config)
         info["id"] = 1
         self.controller_1 = MPCC(obs, info, config)
 
