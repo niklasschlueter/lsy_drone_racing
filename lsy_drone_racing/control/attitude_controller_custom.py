@@ -20,10 +20,67 @@ from scipy.spatial.transform import Rotation as R
 import munch
 from lsy_drone_racing.control import Controller
 from mpcc.planners.minsnap_traj.planner_minsnap_sym import PolynomialPlanner
+from scipy.spatial.transform import Rotation as Rot
+
+from inv_rl.control.quadrotor.attitude_mpc import create_integrator
+import matplotlib.pyplot as plt
 
 
 if TYPE_CHECKING:
     from numpy.typing import NDArray
+
+
+class SplineTracker:
+    def __init__(self, cs_x_lin, cs_y_lin, cs_z_lin):
+        self.cs_x_lin = cs_x_lin
+        self.cs_y_lin = cs_y_lin
+        self.cs_z_lin = cs_z_lin
+
+    def spline_position(self, t):
+        return np.array([self.cs_x_lin(t), self.cs_y_lin(t), self.cs_z_lin(t)])
+
+    def distance_to_spline(self, t, current_position):
+        spline_pos = self.spline_position(t)
+        print(f"spline pos: {spline_pos}")
+        print(f"curr pos: {current_position}")
+        d = np.linalg.norm(spline_pos.squeeze() - current_position)
+        print(f"d: {d}")
+        return d
+
+    def refine_theta(self, t_init, current_position, delta=0.2, tol=1e-3, max_iter=10):
+        """Refine theta by minimizing distance to spline.
+
+        :param t_init: Initial guess for parameter t
+        :param current_position: np.array([x, y, z])
+        :param delta: Search interval half-width
+        :param tol: Tolerance for convergence
+        :param max_iter: Max number of ternary search steps
+        :return: Refined t
+        """
+        left = t_init  # - delta
+        right = t_init + delta
+
+        for _ in range(max_iter):
+            if abs(right - left) < tol:
+                break
+            t1 = left + (right - left) / 3
+            t2 = right - (right - left) / 3
+
+            d1 = self.distance_to_spline(t1, current_position)
+            d2 = self.distance_to_spline(t2, current_position)
+
+            if d1 < d2:
+                right = t2
+            else:
+                left = t1
+
+        return (left + right) / 2
+
+    # def refine_theta(self, theta, pos):
+    #    if self.distance_to_spline(theta+0.01, pos) > self.distance_to_spline(theta-0.01, pos):
+    #        return theta -0.15
+    #    else:
+    #        return theta +0.15
 
 
 class AttitudeController:
@@ -38,8 +95,9 @@ class AttitudeController:
             info: Additional environment information from the reset.
             config: The configuration of the environment.
         """
-        #super().__init__(obs, info, config)
+        # super().__init__(obs, info, config)
         self.freq = config.env.freq
+        self.dt = 1 / self.freq
         self.drone_mass = MASS
         self.kp = np.array([0.4, 0.4, 1.25])
         self.ki = np.array([0.05, 0.05, 0.05])
@@ -57,26 +115,96 @@ class AttitudeController:
         waypoints = [obs["pos"][self._id]] + goals
         approx_path_length = np.sum(np.linalg.norm(np.diff(waypoints)))
 
-        planner_config = munch.Munch({"gate_vel_norm":0.15,
-                                      "spline_type": "linear",
-                                      "constant_offset": 10.0})
-        planner = PolynomialPlanner(obs, info,planner_config)
-        pos, vel = planner.plan_simple_mujoco(
-            obs["pos"][self._id], 
-            obs["gates_pos"][self._id],
-            R.from_quat(obs["gates_quat"][self._id]).as_euler("xyz", degrees=False),
-            sample_points=approx_path_length / 0.3 * self.freq
+        planner_config = munch.Munch(
+            {
+                "gate_vel_norm": 0.15,
+                "spline_type": "bspline",
+                "constant_offset": 10.0,
+                "num_splines_per_traj_meter": 10.0,
+            }
         )
 
-        self.x_des = pos[0, :]
-        self.y_des = pos[1, :]
-        self.z_des = pos[2, :]
+        # planner = PolynomialPlanner(obs, info,planner_config)
+        # pos, vel = planner.plan_simple_mujoco(
+        #    obs["pos"][self._id],
+        #    obs["gates_pos"][self._id],
+        #    R.from_quat(obs["gates_quat"][self._id]).as_euler("xyz", degrees=False),
+        #    sample_points=approx_path_length / 0.3 * self.freq
+        # )
+
+        start_pos = obs["pos"][self._id]
+        gates_pos = obs["gates_pos"][self._id]
+        gates_quat = obs["gates_quat"][self._id]
+        gates_rpy = np.zeros((len(gates_quat), 3))
+
+        for i in range(len(gates_quat)):
+            # Convert to Euler angles in XYZ order
+            q = gates_quat[i, :]
+            rot = Rot.from_quat(q)
+            gates_rpy[i, :] = rot.as_euler("xyz", degrees=False)  # Set degrees=False for radians
+
+        planner = PolynomialPlanner(obs, info, planner_config)  # self.CTRL_FREQ)
+        (
+            self.cs_x,
+            self.cs_y,
+            self.cs_z,
+            self.f,
+            self.theta_max,
+            self.cs_x_lin,
+            self.cs_y_lin,
+            self.cs_z_lin,
+            self.gate_thetas,
+            self.lengths,
+        ) = planner.plan(start_pos, gates_pos, gates_rpy)
+
+        no_samples = int(approx_path_length / 0.6 * self.freq)
+        self.ref = np.zeros((3, no_samples))
+        for i, t in enumerate(np.linspace(0, self.theta_max, no_samples)):
+            # Didnt find any better way to get casadi DM Values back into numpy - TODO!
+            self.ref[:, i] = np.array(
+                [self.cs_x_lin(t), self.cs_y_lin(t), self.cs_z_lin(t)]
+            ).squeeze()
+        # d = np.linalg.norm(np.diff(self.ref), axis=0)
+        # print(f"shaped: {np.shape(d)}")
+        # print(f"self.diff: {np.linalg.norm(np.diff(self.ref), axis=0)}")
+        # print(f"max: {np.max(d)}")
+        # print(f"min: {np.min(d)}")
+        # plt.plot(self.ref[0, :], self.ref[1, :])
+        # plt.show()
+        # exit()
+
+        self.tracker = SplineTracker(self.cs_x_lin, self.cs_y_lin, self.cs_z_lin)
+
+        # current_position = np.array([x, y, z])  # your measured current position
+        # t_init = 5.0  # initial estimate
+        theta_guess = 0.01
+        refined_t = self.tracker.refine_theta(0.01, obs["pos"][self._id])
+        print(f"refined t: {refined_t}")
+
+        self.x_des = self.ref[0, :]
+        print(f"shape xde: {np.shape(self.x_des)}")
+        self.y_des = self.ref[1, :]
+        self.z_des = self.ref[2, :]
+        print(f"att controller instanciated with id {self._id}")
 
         self.ctrl_info = {}
-        self.ctrl_info["trajectory"] = pos.T
+        self.ctrl_info["trajectory"] = self.ref.T
         self.ctrl_info["horizon"] = np.array([])
         self.ctrl_info["opp_prediction"] = np.array([])
 
+        # For data
+        self.X = []
+        self.U = []
+
+        # Necessary for mpcc state approx.
+        self.last_action = np.zeros(4)
+        self.last_f_collective = 0.35
+
+        self.last_theta = 0.01
+        self.theta = 0.01
+        self.v_theta = 0.01
+        self.last_v_theta = 0.01
+        self.acados_integrator = create_integrator(self.dt * 10, 10)
 
     def compute_control(
         self, obs: dict[str, NDArray[np.floating]], info: dict | None = None
@@ -92,8 +220,8 @@ class AttitudeController:
             The collective thrust and orientation [t_des, r_des, p_des, y_des] as a numpy array.
         """
         i = min(self._tick, len(self.x_des) - 1)
-        if i == len(self.x_des) - 1:  # Maximum duration reached
-            self._finished = True
+        # if i == len(self.x_des) - 1:  # Maximum duration reached
+        # self._finished = True
 
         des_pos = np.array([self.x_des[i], self.y_des[i], self.z_des[i]])
         des_vel = np.zeros(3)
@@ -132,7 +260,56 @@ class AttitudeController:
         R_desired = np.vstack([x_axis_desired, y_axis_desired, z_axis_desired]).T
         euler_desired = R.from_matrix(R_desired).as_euler("xyz", degrees=False)
         thrust_desired, euler_desired
-        return np.concatenate([[thrust_desired], euler_desired], dtype=np.float32), self.ctrl_info
+        action = np.array([thrust_desired, *euler_desired])
+
+        # Get rpy
+        q = obs["quat"][self._id]
+        r = R.from_quat(q)
+        rpy = r.as_euler("xyz", degrees=False)  # Set degrees=False for radians
+
+        self.theta = self.tracker.refine_theta(self.theta, obs["pos"][self._id])
+        self.f_collective = (
+            10.0 * (thrust_desired - self.last_f_collective) * self.dt + self.last_f_collective
+        )
+
+        df_cmd, dr_cmd, dp_cmd, _ = (action - self.last_action) / self.dt
+        self.v_theta = (self.theta - self.last_theta) / self.dt
+        dv_theta = (self.v_theta - self.last_v_theta) / self.dt
+
+        # Create "would be" mpcc state
+        mpcc_state = np.concatenate(
+            (
+                obs["pos"][self._id],
+                obs["vel"][self._id],
+                rpy,
+                np.array([self.theta]),
+                np.array([self.last_f_collective]),  # , self.last_f_cmd]), # TODO!
+                self.last_action,  # self.last_frpy_cmd,
+                np.array([self.v_theta]),
+            )
+        )
+
+        self.X += [mpcc_state]
+
+        mpc_action = np.array([df_cmd, dr_cmd, dp_cmd, dv_theta])
+        self.U += [mpc_action]
+
+        print(f"pos: {obs['pos'][self._id]}")
+        print(f"refined theta: {self.theta}")
+        print(f"position there: {self.tracker.spline_position(self.theta)}")
+
+        self.last_action = action
+        self.last_theta = self.theta
+        self.last_v_theta = self.v_theta
+        self.last_f_collective = self.f_collective
+        # return np.concatenate([[thrust_desired], euler_desired], dtype=np.float32), self.ctrl_info
+        return action, self.ctrl_info
+
+    def debug_plot_mppc_states(self):
+        for i in range(len(self.X[0])):
+            plt.figure()
+            plt.plot(self.X[:, i])
+        plt.show()
 
     def step_callback(
         self,
@@ -155,7 +332,11 @@ class AttitudeController:
         """Reset the integral error."""
         self.i_error[:] = 0
         self._tick = 0
-    
+
+        print(f"shape X returned: {np.shape(self.X)}")
+        print(f"shape U returned: {np.shape(self.U)}")
+        # Return Data
+        return np.array(self.X), np.array(self.U)
+
     def episode_reset(self):
         return {}
-

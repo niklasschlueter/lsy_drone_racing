@@ -18,6 +18,7 @@ from inv_rl.attitude_mpc_wrapper import LearningController
 from mpcc.control.controller_single import ControllerSingle as MPCC
 
 from lsy_drone_racing.control import Controller
+from lsy_drone_racing.control.attitude_controller_custom import AttitudeController as AttCtrl
 
 if TYPE_CHECKING:
     from numpy.typing import NDArray
@@ -48,10 +49,10 @@ class AttitudeController(Controller):
 
         self._finished = False
 
-        # info["id"] = 0
-        # self.controller_0 = AttCtrl(obs, info, config)
         info["id"] = 0
-        self.controller_0 = LearningController(obs, info, config)
+        self.controller_0 = AttCtrl(obs, info, config)
+        # info["id"] = 0
+        # self.controller_0 = LearningController(obs, info, config)
         info["id"] = 1
         self.controller_1 = MPCC(obs, info, config)
 
