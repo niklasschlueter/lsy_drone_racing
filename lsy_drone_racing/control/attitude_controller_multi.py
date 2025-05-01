@@ -54,8 +54,8 @@ class AttitudeController(Controller):
         # self.controller_0 = LearningController(obs, info, config)
         # w = self.controller_0.w
         # scale = info.get("MPCC_weight_scale", 1.0)
-        # assert 1.0 <= scale <= 2.0
-        # w[:3] *= scale
+        # assert 0.85 <= scale <= 0.95
+        # w[6] *= scale
         # self.controller_0.ctrl.update_weights(w)
         info["id"] = 1
         self.controller_1 = MPCC(obs, info, config)
