@@ -110,10 +110,10 @@ class AttitudeController:
 
         planner_config = munch.Munch(
             {
-                "gate_vel_norm": 0.15,
-                "spline_type": "bspline",
+                "gate_vel_norm": 0.2,
+                "spline_type": "linear",
                 "constant_offset": 10.0,
-                "num_splines_per_traj_meter": 10.0,
+                "num_splines_per_traj_meter": 100.0,
             }
         )
 
@@ -128,7 +128,7 @@ class AttitudeController:
         start_pos = obs["pos"][self._id]
         gates_pos = obs["gates_pos"][self._id]
         gates_quat = obs["gates_quat"][self._id]
-        gate_direction = -R.from_quat(gates_quat[-1]).as_matrix()[1, :] * 0.5
+        gate_direction = -R.from_quat(gates_quat[-1]).as_matrix()[1, :] * 2.0
         gates_pos = np.concat([gates_pos, gates_pos[[-1]] + gate_direction])
         gates_quat = np.concat([gates_quat, gates_quat[[-1]]])
         gates_rpy = np.zeros((len(gates_quat), 3))
@@ -277,6 +277,7 @@ class AttitudeController:
                 np.array([self.v_theta]),
             )
         )
+        #print(f"theta: {self.theta}")
 
         self.X += [mpcc_state]
 
