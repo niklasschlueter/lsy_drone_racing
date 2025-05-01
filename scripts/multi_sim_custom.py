@@ -91,6 +91,8 @@ def simulate(
         obs, info = env.reset()
         # For information that is persistent between episodes.
         info["persistent"] = persistent_info
+        info["PID_time_scaling"] = 2.0
+        info["MPCC_weight_scale"] = 1.0
         # Pass the episode number.
         info["n_run"] = n_run
         controller: Controller = controller_cls(obs, info, config)

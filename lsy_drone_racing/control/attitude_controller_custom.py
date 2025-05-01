@@ -13,18 +13,14 @@ from __future__ import annotations  # Python 3.10 type hints
 import math
 from typing import TYPE_CHECKING
 
+import matplotlib.pyplot as plt
+import munch
 import numpy as np
 from crazyflow.constants import MASS
-from scipy.interpolate import CubicSpline
-from scipy.spatial.transform import Rotation as R
-import munch
-from lsy_drone_racing.control import Controller
-from mpcc.planners.minsnap_traj.planner_minsnap_sym import PolynomialPlanner
-from scipy.spatial.transform import Rotation as Rot
-
 from inv_rl.control.quadrotor.attitude_mpc import create_integrator
-import matplotlib.pyplot as plt
-
+from mpcc.planners.minsnap_traj.planner_minsnap_sym import PolynomialPlanner
+from scipy.spatial.transform import Rotation as R
+from scipy.spatial.transform import Rotation as Rot
 
 if TYPE_CHECKING:
     from numpy.typing import NDArray
@@ -41,10 +37,7 @@ class SplineTracker:
 
     def distance_to_spline(self, t, current_position):
         spline_pos = self.spline_position(t)
-        print(f"spline pos: {spline_pos}")
-        print(f"curr pos: {current_position}")
         d = np.linalg.norm(spline_pos.squeeze() - current_position)
-        print(f"d: {d}")
         return d
 
     def refine_theta(self, t_init, current_position, delta=0.2, tol=1e-3, max_iter=10):
@@ -135,6 +128,9 @@ class AttitudeController:
         start_pos = obs["pos"][self._id]
         gates_pos = obs["gates_pos"][self._id]
         gates_quat = obs["gates_quat"][self._id]
+        gate_direction = -R.from_quat(gates_quat[-1]).as_matrix()[1, :] * 0.5
+        gates_pos = np.concat([gates_pos, gates_pos[[-1]] + gate_direction])
+        gates_quat = np.concat([gates_quat, gates_quat[[-1]]])
         gates_rpy = np.zeros((len(gates_quat), 3))
 
         for i in range(len(gates_quat)):
@@ -157,21 +153,14 @@ class AttitudeController:
             self.lengths,
         ) = planner.plan(start_pos, gates_pos, gates_rpy)
 
-        no_samples = int(approx_path_length / 0.6 * self.freq)
+        time_scaling = info.get("PID_time_scaling", 1.0)
+        no_samples = int(approx_path_length * self.freq * time_scaling)
         self.ref = np.zeros((3, no_samples))
         for i, t in enumerate(np.linspace(0, self.theta_max, no_samples)):
             # Didnt find any better way to get casadi DM Values back into numpy - TODO!
             self.ref[:, i] = np.array(
                 [self.cs_x_lin(t), self.cs_y_lin(t), self.cs_z_lin(t)]
             ).squeeze()
-        # d = np.linalg.norm(np.diff(self.ref), axis=0)
-        # print(f"shaped: {np.shape(d)}")
-        # print(f"self.diff: {np.linalg.norm(np.diff(self.ref), axis=0)}")
-        # print(f"max: {np.max(d)}")
-        # print(f"min: {np.min(d)}")
-        # plt.plot(self.ref[0, :], self.ref[1, :])
-        # plt.show()
-        # exit()
 
         self.tracker = SplineTracker(self.cs_x_lin, self.cs_y_lin, self.cs_z_lin)
 
@@ -179,13 +168,10 @@ class AttitudeController:
         # t_init = 5.0  # initial estimate
         theta_guess = 0.01
         refined_t = self.tracker.refine_theta(0.01, obs["pos"][self._id])
-        print(f"refined t: {refined_t}")
 
         self.x_des = self.ref[0, :]
-        print(f"shape xde: {np.shape(self.x_des)}")
         self.y_des = self.ref[1, :]
         self.z_des = self.ref[2, :]
-        print(f"att controller instanciated with id {self._id}")
 
         self.ctrl_info = {}
         self.ctrl_info["trajectory"] = self.ref.T
@@ -221,7 +207,7 @@ class AttitudeController:
         """
         i = min(self._tick, len(self.x_des) - 1)
         # if i == len(self.x_des) - 1:  # Maximum duration reached
-        # self._finished = True
+        self._finished = obs["target_gate"][self._id] == -1
 
         des_pos = np.array([self.x_des[i], self.y_des[i], self.z_des[i]])
         des_vel = np.zeros(3)
@@ -262,6 +248,9 @@ class AttitudeController:
         thrust_desired, euler_desired
         action = np.array([thrust_desired, *euler_desired])
 
+        if self._finished:  # Prevent us from logging data after race finish
+            return action, self.ctrl_info
+
         # Get rpy
         q = obs["quat"][self._id]
         r = R.from_quat(q)
@@ -293,10 +282,6 @@ class AttitudeController:
 
         mpc_action = np.array([df_cmd, dr_cmd, dp_cmd, dv_theta])
         self.U += [mpc_action]
-
-        print(f"pos: {obs['pos'][self._id]}")
-        print(f"refined theta: {self.theta}")
-        print(f"position there: {self.tracker.spline_position(self.theta)}")
 
         self.last_action = action
         self.last_theta = self.theta
@@ -333,8 +318,6 @@ class AttitudeController:
         self.i_error[:] = 0
         self._tick = 0
 
-        print(f"shape X returned: {np.shape(self.X)}")
-        print(f"shape U returned: {np.shape(self.U)}")
         # Return Data
         return np.array(self.X), np.array(self.U)
 
