@@ -9,7 +9,6 @@ saves
 .pytest_cache
 **/*.json
 **/*.csv
-plots/
 c_generated_code/
 **/c_generated_code*/
 **/data/
