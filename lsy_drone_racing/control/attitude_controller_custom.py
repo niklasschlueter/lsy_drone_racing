@@ -128,7 +128,7 @@ class AttitudeController:
         start_pos = obs["pos"][self._id]
         gates_pos = obs["gates_pos"][self._id]
         gates_quat = obs["gates_quat"][self._id]
-        gate_direction = -R.from_quat(gates_quat[-1]).as_matrix()[1, :] * 2.0
+        gate_direction = -R.from_quat(gates_quat[-1]).as_matrix()[1, :] * 10.0
         gates_pos = np.concat([gates_pos, gates_pos[[-1]] + gate_direction])
         gates_quat = np.concat([gates_quat, gates_quat[[-1]]])
         gates_rpy = np.zeros((len(gates_quat), 3))
@@ -153,7 +153,8 @@ class AttitudeController:
             self.lengths,
         ) = planner.plan(start_pos, gates_pos, gates_rpy)
 
-        time_scaling = info.get("PID_time_scaling", 1.0)
+        #time_scaling = info.get("PID_time_scaling", 1.0)
+        time_scaling = 5.0
         no_samples = int(approx_path_length * self.freq * time_scaling)
         self.ref = np.zeros((3, no_samples))
         for i, t in enumerate(np.linspace(0, self.theta_max, no_samples)):
