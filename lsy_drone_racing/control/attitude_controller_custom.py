@@ -50,7 +50,7 @@ class SplineTracker:
         :param max_iter: Max number of ternary search steps
         :return: Refined t
         """
-        left = t_init  # - delta
+        left = max(t_init  - delta, 0.0)
         right = t_init + delta
 
         for _ in range(max_iter):

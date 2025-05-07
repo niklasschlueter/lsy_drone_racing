@@ -32,9 +32,9 @@ channel = 80
 physics = "analytical"
 
 camera_view = [5.0, -40.0, -40.0, 0.5, -1.0, 0.5]
-freq = 360                                        # Simulation frequency, in Hz
-attitude_freq = 300                               # Controller frequency, in Hz. This frequency is used to simulate the onboard controller, NOT for the environment's step function
-gui = false # Enable/disable PyBullet's GUI
+freq = 600                                        # Simulation frequency, in Hz
+attitude_freq = 600                               # Controller frequency, in Hz. This frequency is used to simulate the onboard controller, NOT for the environment's step function
+gui = true # Enable/disable PyBullet's GUI
 
 [env]
 id = "MultiDroneRacing-v0"
@@ -62,18 +62,18 @@ pos = [1.0, -1.0, 1.11]
 rpy = [0.0, 0.0, -1.57]
 
 ### SECOND ROUND
-# [[env.track.gates]]
-# pos = [1.0, 1.0, 0.56]
-# rpy = [0.0, 0.0, 1.57]
-# [[env.track.gates]]
-# pos = [-1.0, 1.0, 1.11]
-# rpy = [0.0, 0.0, 1.57]
-# [[env.track.gates]]
-# pos = [-1.0, -1.0, 0.56]
-# rpy = [0.0, 0.0, -1.57]
-# [[env.track.gates]]
-# pos = [1.0, -1.0, 1.11]
-# rpy = [0.0, 0.0, -1.57]
+[[env.track.gates]]
+pos = [1.0, 1.0, 0.56]
+rpy = [0.0, 0.0, 1.57]
+[[env.track.gates]]
+pos = [-1.0, 1.0, 1.11]
+rpy = [0.0, 0.0, 1.57]
+[[env.track.gates]]
+pos = [-1.0, -1.0, 0.56]
+rpy = [0.0, 0.0, -1.57]
+[[env.track.gates]]
+pos = [1.0, -1.0, 1.11]
+rpy = [0.0, 0.0, -1.57]
 #
 ### THIRD ROUND
 #[[env.track.gates]]

@@ -95,9 +95,13 @@ def simulate(
             PID_T_MIN, PID_T_MAX = 1.4, 2.0
             MPCC_T_MIN, MPCC_T_MAX = 0.85, 0.95
             # For information that is persistent between episodes.
+            #info["persistent"] = persistent_info
+            #info["PID_time_scaling"] = (PID_T_MAX - PID_T_MIN) * tau + PID_T_MIN
+            #info["MPCC_weight_scale"] = (MPCC_T_MAX - MPCC_T_MIN) * tau + MPCC_T_MIN
+
             info["persistent"] = persistent_info
-            info["PID_time_scaling"] = (PID_T_MAX - PID_T_MIN) * tau + PID_T_MIN
-            info["MPCC_weight_scale"] = (MPCC_T_MAX - MPCC_T_MIN) * tau + MPCC_T_MIN
+            info["PID_time_scaling"] = 2.0
+            info["MPCC_weight_scale"] = 1.0
             # Pass the episode number.
             info["n_run"] = n_run
             controller: Controller = controller_cls(obs, info, config)
