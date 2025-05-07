@@ -308,7 +308,7 @@ def main(controller: str = "pid"):
         horizon_errors.append([])
 
         # Iterate through tau values from 1.0 to 2.0
-        for tau in np.linspace(0.0, 1.0, 11):
+        for tau in [0.0]:#np.linspace(0.0, 1.0, 11):
             tau_path = path / f"{tau:.1f}"
             if not tau_path.exists():
                 continue

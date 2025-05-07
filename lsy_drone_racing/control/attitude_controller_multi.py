@@ -50,8 +50,15 @@ class AttitudeController(Controller):
         self._finished = False
 
         info["id"] = 0
-        #self.controller_0 = AttCtrl(obs, info, config)
-        self.controller_0 = LearningController(obs, info, config)
+
+        self.controller_0 = None
+        controller_name = info["settings_controller0"]
+        if controller_name == "pid":
+            self.controller_0 = AttCtrl(obs, info, config)
+        elif controller_name == "learning":
+            self.controller_0 = LearningController(obs, info, config)
+        else:
+            raise NotImplementedError
         # w = self.controller_0.w
         # scale = info.get("MPCC_weight_scale", 1.0)
         # assert 0.85 <= scale <= 0.95

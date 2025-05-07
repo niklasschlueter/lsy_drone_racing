@@ -11,6 +11,7 @@ def load_data(path: Path) -> list[pd.DataFrame]:
     # Path to the directory containing prediction error data
     # Find the most recent file(s) in the directory
     files = list(path.glob("*.csv"))
+    print(f"files found: {files}")
     if not files:
         raise RuntimeError(f"No CSV files found in {path}")
     # Sort files by modification time (most recent first)
@@ -252,7 +253,7 @@ def plot_normalized_error(errors, paths):
 
 def main(controller: str = "pid"):
     root = Path(__file__).parents[1] / "saves/exp_prediction_error" / controller
-    paths = [root / "linear", root / "acados", root / "learning"]
+    paths = [root / "linear", root / "acados"]#, root / "learning"]
 
     linear_times = []
     linear_crash = []
@@ -272,26 +273,32 @@ def main(controller: str = "pid"):
 
     for path in paths:
         # Iterate through tau values
-        for tau in np.linspace(0.0, 1.0, 11):
+        for tau in [0, 1]:#np.linspace(0.0, 1.0, 11):
             tau_path = path / f"{tau:.1f}"
             if not tau_path.exists():
                 continue
 
             dfs = load_data(tau_path)
 
+            print(f"tau path: {tau_path}")
             # We need: lap times or NaN
             for i, df in enumerate(dfs):
                 opp_finish_idx = (df["OPP_TARGET_GATE"] == -1).idxmax()
                 finish_idx = (df["TARGET_GATE"] == -1).idxmax()
+                print(f"opp finish time: {opp_finish_idx}, finish idx: {finish_idx}")
                 if finish_idx == 0 and df["TARGET_GATE"][0] != -1:
                     finish_time = float("nan")  # No -1 found
+                    print(f"not finished")
                 else:
                     finish_time = df["TIME"][finish_idx]
+                    print(f"finish time: {finish_time}")
                 winner = not np.isnan(finish_time) and (
                     finish_idx <= opp_finish_idx or np.isnan(opp_finish_idx)
                 )
 
-                crash = (df["POS_Z"] < 0).any() and not (df["TARGET_GATE"] == -1).any()
+                #crash = (df["POS_Z"] < 0).any() and not (df["TARGET_GATE"] == -1).any()
+                crash = not (df["TARGET_GATE"] == -1).any()
+                print(f"crash: {crash}")
                 if path.name == "acados":
                     acados_times.append(finish_time)
                     acados_crash.append(crash)
