@@ -253,7 +253,7 @@ def plot_normalized_error(errors, paths):
 
 def main(controller: str = "pid"):
     root = Path(__file__).parents[1] / "saves/exp_prediction_error" / controller
-    paths = [root / "linear", root / "acados"]#, root / "learning"]
+    paths = [root / "linear", root / "acados", root / "learning"]
 
     linear_times = []
     linear_crash = []
@@ -273,7 +273,7 @@ def main(controller: str = "pid"):
 
     for path in paths:
         # Iterate through tau values
-        for tau in [0, 1]:#np.linspace(0.0, 1.0, 11):
+        for tau in [0, 1, 2]:#np.linspace(0.0, 1.0, 11):
             tau_path = path / f"{tau:.1f}"
             if not tau_path.exists():
                 continue
@@ -286,18 +286,22 @@ def main(controller: str = "pid"):
                 opp_finish_idx = (df["OPP_TARGET_GATE"] == -1).idxmax()
                 finish_idx = (df["TARGET_GATE"] == -1).idxmax()
                 print(f"opp finish time: {opp_finish_idx}, finish idx: {finish_idx}")
+                finish_time = None
+                crash = False
                 if finish_idx == 0 and df["TARGET_GATE"][0] != -1:
                     finish_time = float("nan")  # No -1 found
+                    crash = True
                     print(f"not finished")
                 else:
-                    finish_time = df["TIME"][finish_idx]
+                    #finish_time = df["TIME"][finish_idx]
+                    finish_time = finish_idx * 1/120
                     print(f"finish time: {finish_time}")
                 winner = not np.isnan(finish_time) and (
                     finish_idx <= opp_finish_idx or np.isnan(opp_finish_idx)
                 )
 
                 #crash = (df["POS_Z"] < 0).any() and not (df["TARGET_GATE"] == -1).any()
-                crash = not (df["TARGET_GATE"] == -1).any()
+                #crash = not (df["TARGET_GATE"] == -1).any()
                 print(f"crash: {crash}")
                 if path.name == "acados":
                     acados_times.append(finish_time)
@@ -338,11 +342,32 @@ def main(controller: str = "pid"):
     # Plot lap times with error bars
     times = [untrained_stats[0], trained_stats[0], linear_stats[0], acados_stats[0]]
     errors = [untrained_stats[1], trained_stats[1], linear_stats[1], acados_stats[1]]
-    ax1.bar(x, times, width, yerr=errors, capsize=5)
+    #ax1.bar(x, times, width, yerr=errors, capsize=5)
+    lap_time_data = [
+        untrained_times,
+        trained_times,
+        linear_times,
+        acados_times
+    ]
+    print(f"lap time data: {lap_time_data}")
+    assert(len(lap_time_data) == len(labels))
+    
+
+    positions = np.arange(1, len(labels) + 1)  # boxplot uses 1-based indexing    
+    # Create box plot on ax1
+    ax1.boxplot(
+        lap_time_data,
+        labels=labels,
+        showmeans=True,
+        meanline=True,
+        notch=False
+    )
+
     ax1.set_ylabel("Lap Time (s)")
     ax1.set_title("Mean Lap Times")
-    ax1.set_xticks(x)
-    ax1.set_xticklabels(labels)
+    #ax1.set_xticks(x)
+    #ax1.set_xticklabels(labels)
+
 
     # Plot crash rates
     crashes = [untrained_stats[2], trained_stats[2], linear_stats[2], acados_stats[2]]
