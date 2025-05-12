@@ -52,13 +52,16 @@ class AttitudeController(Controller):
         info["id"] = 0
 
         self.controller_0 = None
-        controller_name = info["settings_controller0"]
-        if controller_name == "pid":
-            self.controller_0 = AttCtrl(obs, info, config)
-        elif controller_name == "learning":
-            self.controller_0 = LearningController(obs, info, config)
+        if "settings_controller0" in info.keys():
+            controller_name = info["settings_controller0"]
+            if controller_name == "pid":
+                self.controller_0 = AttCtrl(obs, info, config)
+            elif controller_name == "learning":
+                self.controller_0 = LearningController(obs, info, config)
+            else:
+                raise NotImplementedError
         else:
-            raise NotImplementedError
+            self.controller_0 = AttCtrl(obs, info, config)
         # w = self.controller_0.w
         # scale = info.get("MPCC_weight_scale", 1.0)
         # assert 0.85 <= scale <= 0.95
@@ -107,7 +110,8 @@ class AttitudeController(Controller):
             action, obs, reward, terminated, truncated, info
         )
         # Make sure this makes sense
-        self._finished = ctrl_finished_0 & ctrl_finished_1
+        #self._finished = ctrl_finished_0 & ctrl_finished_1
+        self._finished = ctrl_finished_1
         return self._finished
 
     def episode_callback(self, **kwargs):

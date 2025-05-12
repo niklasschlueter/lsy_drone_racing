@@ -154,7 +154,7 @@ class AttitudeController:
         ) = planner.plan(start_pos, gates_pos, gates_rpy)
 
         #time_scaling = info.get("PID_time_scaling", 1.0)
-        time_scaling = 5.0
+        time_scaling = 8.0
         no_samples = int(approx_path_length * self.freq * time_scaling)
         self.ref = np.zeros((3, no_samples))
         for i, t in enumerate(np.linspace(0, self.theta_max, no_samples)):

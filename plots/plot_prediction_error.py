@@ -1,6 +1,7 @@
 from pathlib import Path
 
 import fire
+import os
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -150,16 +151,21 @@ def compute_horizon_error(actual_positions, predictions):
     # Plot actual positions at specific timesteps with full horizon
     # Create array of actual positions shifted to match predictions
     actual_shifted = np.zeros_like(predictions)
+    print(f"len actual ppositions: {len(actual_positions)}")
     for i in range(len(actual_positions)):
         if i + n_horizon <= len(actual_positions):
             actual_shifted[i] = actual_positions[i : i + n_horizon]
     # Cut off the last n_horizon timesteps since we don't have enough actual positions to compare
     predictions = predictions[: -n_horizon + 1]
     actual_shifted = actual_shifted[: -n_horizon + 1]
-    return np.mean(np.linalg.norm(predictions - actual_shifted, axis=-1), axis=0)
+    print(f"len predictions: {np.shape(predictions)}")
+    value = np.mean(np.linalg.norm(predictions - actual_shifted, axis=-1), axis=0)
+    print(f"len value: {np.shape(value)}")
+    return value
 
 
-def plot_joint_error(errors, paths):
+
+def plot_joint_error(errors):
     """Create joint error plots comparing all methods."""
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 5))
 
@@ -258,7 +264,9 @@ def plot_joint_error(errors, paths):
     ax2.legend()
 
     plt.tight_layout()
-    plt.show()
+    #plt.show()
+    return fig
+
 
 
 def plot_normalized_error(errors, paths):
@@ -296,24 +304,58 @@ def plot_normalized_error(errors, paths):
     plt.tight_layout()
     plt.show()
 
+def plot_horizon_error(horizon_errors, predictors, colors):
+    fig = plt.figure()
 
-def main(controller: str = "pid"):
+    for k, (predictor, color) in enumerate(zip(predictors, colors)):
+        # assume horizon errors are in the order linear, acados, learning
+        errors = horizon_errors[k]
+        print(f"shape horizon errors: {np.shape(horizon_errors[0])}")
+        #errors_linear = horizon_errors[0]
+        #errors_acados = horizon_errors[1]
+        #errors_learning = horizon_errors[2]
+        # for each controller, the errors should have the shape reps, n_runs, horizon
+        errors_mean = np.mean(errors, axis=0)
+        errors_std = np.std(errors, axis=0)
+        print(f"errors std: {errors_std}")
+        for i in range(len(errors_mean)):
+            if i == 0:
+                plt.plot(errors_mean[i], label=predictor, color=color, alpha=(i+1)/len(errors_mean))
+            else:
+                plt.plot(errors_mean[i], label=predictor, color=color, alpha=(i+1)/len(errors_mean))
+            #plt.fill_between(np.arange(len(errors_mean[0])), errors_mean[i] - errors_std[i], errors_mean[i] + errors_std[i])
+
+    #x_lin = np.arange(len(linear_means))
+    #ax2.plot(x_lin, linear_means, label="Linear", color="blue")
+    #ax2.fill_between(
+    #    x_lin, linear_means - linear_stds, linear_means + linear_stds, color="blue", alpha=0.2
+    #)
+    plt.legend()
+    #plt.show()
+    return fig
+
+
+
+
+def run_plots(controller: str = "pid"):
     root = Path(__file__).parents[1] / "saves/exp_prediction_error" / controller
-    paths = [root / "linear", root / "acados", root / "learning"]
 
     errors = {}
     horizon_errors = []
-    for path in paths:
+    predictors = ["linear", "learning", "acados"]
+    colors = ["blue", "red", "green"]
+    for predictor in predictors:
+        path = root / predictor
         errors[path.name] = []
         horizon_errors.append([])
 
         # Iterate through tau values from 1.0 to 2.0
-        for tau in [0.0]:#np.linspace(0.0, 1.0, 11):
-            tau_path = path / f"{tau:.1f}"
-            if not tau_path.exists():
+        for rep in range(100):#np.linspace(0.0, 1.0, 11):
+            rep_path = path / f"{rep:.1f}"
+            if not rep_path.exists():
                 continue
 
-            dfs = load_data(tau_path)
+            dfs = load_data(rep_path)
             actual_positions, predictions = preprocess_data(dfs)
 
             # Sanity check for predictions
@@ -337,8 +379,21 @@ def main(controller: str = "pid"):
             errors[path.name].append(tau_errors)
             horizon_errors[-1].append(tau_horizon_errors)
 
-    plot_joint_error(errors, paths)
+    fig = plot_horizon_error(horizon_errors, predictors, colors)
+    save_path = f"summary_plots/horizon_error_{controller}.png"
+    os.makedirs(os.path.dirname(save_path), exist_ok=True)
+    plt.savefig(save_path, dpi=400)
+    fig = plot_joint_error(errors)
+    save_path = f"summary_plots/joint_error_{controller}.png"
+    print(f"savign at {save_path}")
+    os.makedirs(os.path.dirname(save_path), exist_ok=True)
+    plt.savefig(save_path, dpi=400)
+    plt.show()
 
+
+def main():
+    for controller in ["pid", "learning"][::-1]:
+        run_plots(controller)
 
 if __name__ == "__main__":
     fire.Fire(main)
