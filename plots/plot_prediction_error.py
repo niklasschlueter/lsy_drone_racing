@@ -18,6 +18,7 @@ def load_data(path: Path) -> list[pd.DataFrame]:
     files.sort(key=lambda x: x.stat().st_mtime)
     dfs = []
     for file in files:
+        print(f"file: {file}")
         df = pd.read_csv(file)
         dfs.append(df)
     return dfs
@@ -25,12 +26,17 @@ def load_data(path: Path) -> list[pd.DataFrame]:
 
 def preprocess_data(dfs: list[pd.DataFrame]) -> tuple[list[NDArray], list[NDArray]]:
     actual_positions, predictions = [], []
-    for df in dfs:
+    for i, df in enumerate(dfs):
+        print(f"df id: {i}")
         # Drop rows where opponent z position is negative -> has been warped out of sim
         df = df[df["OPP_POS_Z"] >= 0]
+        if df.shape[0] == 0:
+            print(f"ATTENTION: opponent eliminated before we even start the round.")
+            continue
         # Check that control frequency is constant throughout trajectory
         ctrl_freq_vals = df["CTRL_FREQ"].unique()
         if len(ctrl_freq_vals) != 1:
+            print(f"ctrl_freq vals: {ctrl_freq_vals}")
             raise ValueError(f"Control frequency varies in trajectory: {ctrl_freq_vals}")
         ctrl_freq = ctrl_freq_vals[0]
         # Check that prediction frequency is constant throughout trajectory
@@ -160,8 +166,9 @@ def compute_horizon_error(actual_positions, predictions):
     actual_shifted = actual_shifted[: -n_horizon + 1]
     print(f"len predictions: {np.shape(predictions)}")
     value = np.mean(np.linalg.norm(predictions - actual_shifted, axis=-1), axis=0)
+    std = np.std(np.linalg.norm(predictions - actual_shifted, axis=-1), axis=0)
     print(f"len value: {np.shape(value)}")
-    return value
+    return value, std
 
 
 
@@ -174,19 +181,19 @@ def plot_joint_error(errors):
     if "linear" in errors:
         for error in errors["linear"]:
             for e in error:
-                ax1.plot(e, color="blue", alpha=1 / len(errors["linear"]))
+                ax1.plot(e, color="blue", alpha=max(1 / len(errors["linear"]), 0.2))
         ax1.plot([], label="Linear", color="blue")  # Add single label line
 
     if "acados" in errors:
         for error in errors["acados"]:
             for e in error:
-                ax1.plot(e, color="green", alpha=1 / len(errors["acados"]))
+                ax1.plot(e, color="green", alpha=max(1 / len(errors["acados"]), 0.2))
         ax1.plot([], label="Acados", color="green")  # Add single label line
 
     if "learning" in errors:
         for error in errors["learning"]:
             for e in error:
-                ax1.plot(e, color="red", alpha=1 / len(errors["learning"]))
+                ax1.plot(e, color="red", alpha=max(1 / len(errors["learning"]), 0.2))
         ax1.plot([], label="Learning", color="red")  # Add single label line
 
         ax1.set_xlabel("Timestep")
@@ -310,19 +317,44 @@ def plot_horizon_error(horizon_errors, predictors, colors):
     for k, (predictor, color) in enumerate(zip(predictors, colors)):
         # assume horizon errors are in the order linear, acados, learning
         errors = horizon_errors[k]
-        print(f"shape horizon errors: {np.shape(horizon_errors[0])}")
+        print(f"shape horizon errors: {len(horizon_errors)}")
+        print(f"shape horizon errors: {type(horizon_errors)}")
+        print(f"shape horizon errors: {len(horizon_errors[0])}")
+        print(f"shape horizon errors: {type(horizon_errors[0])}")
+        print(f"shape horizon errors: {len(horizon_errors[0][1])}")
+        print(f"shape horizon errors: {type(horizon_errors[0][1])}")
         #errors_linear = horizon_errors[0]
         #errors_acados = horizon_errors[1]
         #errors_learning = horizon_errors[2]
         # for each controller, the errors should have the shape reps, n_runs, horizon
+        #for i in range(len(errors[0])):
+
+        #errors = pd.DataFrame(errors)
+
+        #dimensions = len(horizon_errors)
+        #reps = len(errors[0])
+
+        #horizon_errors_mean_n_runs = []
+        #for rep in range(reps):
+        #    n_runs = len(errors[rep])
+        #    horizon_errors = []#errors_mean = []
+        #    for n_run in range(n_runs):
+        #        #errors_horizon = errors[rep][n_run]
+        #        #print(f"shape errors horizon: {errors_horizon}")
+        #        horizon_errors += [errors[rep][n_run]]
+        #    horizon_errors_mean_n_runs += [np.mean(horizon_errors, axis=0)]
+        #print(f"shape hoirzon_errors_mean_n_runs: {np.shape(horizon_errors_mean_n_runs)}")
+        ##print(f"errors mean mean: {np.mean(errors_mean)}")
+
         errors_mean = np.mean(errors, axis=0)
+        #print(f"prev: {errors_mean}")
         errors_std = np.std(errors, axis=0)
         print(f"errors std: {errors_std}")
         for i in range(len(errors_mean)):
-            if i == 0:
+            if i == len(errors_mean)-1:
                 plt.plot(errors_mean[i], label=predictor, color=color, alpha=(i+1)/len(errors_mean))
             else:
-                plt.plot(errors_mean[i], label=predictor, color=color, alpha=(i+1)/len(errors_mean))
+                plt.plot(errors_mean[i], color=color, alpha=(i+1)/len(errors_mean))
             #plt.fill_between(np.arange(len(errors_mean[0])), errors_mean[i] - errors_std[i], errors_mean[i] + errors_std[i])
 
     #x_lin = np.arange(len(linear_means))
@@ -355,6 +387,8 @@ def run_plots(controller: str = "pid"):
             if not rep_path.exists():
                 continue
 
+            print(f"predictor: {predictor}")
+            print(f"rep: {rep}")
             dfs = load_data(rep_path)
             actual_positions, predictions = preprocess_data(dfs)
 
@@ -370,14 +404,17 @@ def run_plots(controller: str = "pid"):
 
             # Compute errors for this tau value
             tau_errors = []
-            tau_horizon_errors = []
+            tau_horizon_errors_means = []
+            tau_horizon_errors_stds= []
             for pos, pred in zip(actual_positions, predictions):
                 tau_errors.append(compute_mean_prediction_error(pos, pred))
-                tau_horizon_errors.append(compute_horizon_error(pos, pred))
+                mean_horizon_error, std_horizon_error = compute_horizon_error(pos, pred)
+                tau_horizon_errors_means.append(mean_horizon_error)
+                tau_horizon_errors_stds.append(std_horizon_error)
 
             # Add errors from this tau to the overall list
             errors[path.name].append(tau_errors)
-            horizon_errors[-1].append(tau_horizon_errors)
+            horizon_errors[-1].append(tau_horizon_errors_means)
 
     fig = plot_horizon_error(horizon_errors, predictors, colors)
     save_path = f"summary_plots/horizon_error_{controller}.png"
@@ -392,7 +429,7 @@ def run_plots(controller: str = "pid"):
 
 
 def main():
-    for controller in ["pid", "learning"][::-1]:
+    for controller in ["pid", "learning"]:#[::-1]:
         run_plots(controller)
 
 if __name__ == "__main__":

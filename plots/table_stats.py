@@ -372,16 +372,16 @@ def run_plots(controller: str = "pid"):
     sns.set_theme(style="whitegrid", context="talk", palette="colorblind")
     bar_width = 0.3
     ## Create box plot on ax1
-    #ax1.boxplot(
-    #    lap_time_data,
-    #    labels=labels,
-    #    showmeans=True,
-    #    meanline=True,
-    #    notch=False
-    #)
+    ax1.boxplot(
+        lap_time_data,
+        labels=labels,
+        showmeans=True,
+        meanline=True,
+        notch=False
+    )
 
-    #ax1.set_ylabel("Lap Time (s)")
-    #ax1.set_title("Mean Lap Times")
+    ax1.set_ylabel("Lap Time (s)")
+    ax1.set_title("Mean Lap Times")
 
     ## Plot crash rates
     #crashes = [untrained_stats[2], trained_stats[2], linear_stats[2], acados_stats[2]]
@@ -418,9 +418,9 @@ def run_plots(controller: str = "pid"):
     })
 
     #sns.boxplot(x='Method', y='Lap Time', data=lap_df, ax=ax1, palette=colors, showmeans=True,
-    #            meanprops={"linestyle": "-", "color": "black"})
+    #meanprops={"linestyle": "-", "color": "black"})
     #sns.violinplot(data=lap_df, x="Method", y="Lap Time", palette=colors, ax=ax1, inner="quartile")
-    sns.stripplot(data=lap_df, x="Method", y="Lap Time", palette=colors, ax=ax1,jitter=True)
+    #sns.stripplot(data=lap_df, x="Method", y="Lap Time", palette=colors, ax=ax1,jitter=True)
 
 
     ax1.set_title("Mean Lap Times")

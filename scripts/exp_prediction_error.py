@@ -91,7 +91,8 @@ def simulate(
     #tau = 1
     repetitions = 10 
     n_runs = 5
-    head_start_times = np.random.uniform(0.5, 8.5, repetitions*n_runs)
+    head_start_times = np.random.uniform(0.5, 3.5, repetitions*n_runs)
+    print(f"head start times: {head_start_times}")
     for rep in range(repetitions):
         for opponent_ctrl in ["learning", "pid"]:#, "pid"]:
             for predictor, n_runs in zip(["linear", "learning", "acados"] , [n_runs, n_runs, n_runs]):
@@ -115,7 +116,14 @@ def simulate(
                     info["settings_predictor"] = predictor 
                     #info["settings_controller1"] = "mpcc"
 
-                    hover_time = head_start_times[rep*n_run]
+                    hover_time = head_start_times[(rep+1)*(n_run+1)-1]
+                    print("#################################################################")
+                    print("#################################################################")
+                    print("#################################################################")
+                    print(f"hover time exp pred: {hover_time}")
+                    print("#################################################################")
+                    print("#################################################################")
+                    print("#################################################################")
                     info["settings_initial_hover_time"] = hover_time
 
                     info["persistent"] = persistent_info
