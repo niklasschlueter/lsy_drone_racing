@@ -317,12 +317,12 @@ def plot_horizon_error(horizon_errors, predictors, colors):
     for k, (predictor, color) in enumerate(zip(predictors, colors)):
         # assume horizon errors are in the order linear, acados, learning
         errors = horizon_errors[k]
-        print(f"shape horizon errors: {len(horizon_errors)}")
-        print(f"shape horizon errors: {type(horizon_errors)}")
-        print(f"shape horizon errors: {len(horizon_errors[0])}")
-        print(f"shape horizon errors: {type(horizon_errors[0])}")
-        print(f"shape horizon errors: {len(horizon_errors[0][1])}")
-        print(f"shape horizon errors: {type(horizon_errors[0][1])}")
+        #print(f"shape horizon errors: {len(horizon_errors)}")
+        #print(f"shape horizon errors: {type(horizon_errors)}")
+        #print(f"shape horizon errors: {len(horizon_errors[0])}")
+        #print(f"shape horizon errors: {type(horizon_errors[0])}")
+        #print(f"shape horizon errors: {len(horizon_errors[0][1])}")
+        #print(f"shape horizon errors: {type(horizon_errors[0][1])}")
         #errors_linear = horizon_errors[0]
         #errors_acados = horizon_errors[1]
         #errors_learning = horizon_errors[2]
@@ -374,7 +374,7 @@ def run_plots(controller: str = "pid"):
 
     errors = {}
     horizon_errors = []
-    predictors = ["linear", "learning", "acados"]
+    predictors = ["linear", "learning", "acados"] #["linear", "learning", "acados"]
     colors = ["blue", "red", "green"]
     for predictor in predictors:
         path = root / predictor
@@ -429,7 +429,7 @@ def run_plots(controller: str = "pid"):
 
 
 def main():
-    for controller in ["pid", "learning"]:#[::-1]:
+    for controller in ["pid", "learning"][::-1]:
         run_plots(controller)
 
 if __name__ == "__main__":
