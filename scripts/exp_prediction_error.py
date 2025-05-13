@@ -94,8 +94,8 @@ def simulate(
     head_start_times = np.random.uniform(0.5, 3.5, repetitions*n_runs)
     print(f"head start times: {head_start_times}")
     for rep in range(repetitions):
-        for opponent_ctrl in ["learning", "pid"][::-1]:#, "pid"]:
-            for predictor, n_runs in zip(["linear", "learning", "acados"] , [no_runs, 0, 0]):
+        for opponent_ctrl in ["learning"]:#, "pid"]:#[::-1]:#, "pid"]:
+            for predictor, n_runs in zip(["linear", "learning", "acados"] , [0, 0, no_runs]):
                 persistent_info = ({}, {})
                 # Consecutive Repetitions (only makes sense for learning between episodes)
                 for n_run in range(n_runs):  # Run n_runs episodes with the controller

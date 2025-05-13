@@ -6,7 +6,16 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from numpy.typing import NDArray
+import matplotlib
 
+matplotlib.use('TkAgg')
+from matplotlib import pyplot as plt
+plt.rcParams.update({
+    "text.usetex": True,
+    "font.family": "Times New Roman",
+    "font.size": 12,
+    "pgf.texsystem": "pdflatex",
+})
 
 def load_data(path: Path) -> list[pd.DataFrame]:
     # Path to the directory containing prediction error data
