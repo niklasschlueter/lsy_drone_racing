@@ -90,15 +90,16 @@ def simulate(
     # controller = None
     #tau = 1
     repetitions = 10
-    no_runs = 2
-    head_start_times = np.random.uniform(1.5, 1.5, repetitions*n_runs)
+    no_runs = 5
+    head_start_times = np.random.uniform(0.5, 5.5, repetitions*n_runs)
     print(f"head start times: {head_start_times}")
     for rep in range(repetitions):
-        for opponent_ctrl in ["learning"]:#, "pid"]:#[::-1]:#, "pid"]:
-            for predictor, n_runs in zip(["linear", "learning", "acados"], [0,no_runs, 0]):
-                persistent_info = ({}, {})
+        for opponent_ctrl in ["learning"]:#[::-1]:#, "pid"]:
+            #for predictor, n_runs in zip(["linear", "learning", "acados"], [no_runs, no_runs, no_runs]):
+            for predictor, n_runs in zip(["no_learning", "", ""], [no_runs, 0, 0]):
                 # Consecutive Repetitions (only makes sense for learning between episodes)
                 for n_run in range(n_runs):  # Run n_runs episodes with the controller
+                    persistent_info = ({}, {})
                     print(f"STARTING RUN {n_run}/{n_runs} WITH OPP CTRL {opponent_ctrl} AND PREDICTOR {predictor} IN REPETITION {rep}")
                     obs, info = env.reset()
                     #PID_T_MIN, PID_T_MAX = 1.4, 2.0
@@ -113,7 +114,7 @@ def simulate(
                     #info["settings_controller1"] = "mpcc"
 
                     #predictor = "linear" #"learning" # "linear", "acados"
-                    info["settings_predictor"] = predictor 
+                    info["settings_predictor"] = "learning" #predictor 
                     #info["settings_controller1"] = "mpcc"
 
                     hover_time = head_start_times[(rep+1)*(n_run+1)-1]
@@ -130,7 +131,7 @@ def simulate(
                     #info["PID_time_scaling"] = 2.0
                     #info["MPCC_weight_scale"] = 1.0
                     # Pass the episode number.
-                    info["n_run"] = n_run
+                    info["n_run"] = 0 #n_run
                     controller: Controller = controller_cls(obs, info, config)
                     #opponent_ctrl = (
                     #    "pid" if isinstance(controller.controller_0, AttitudeController) else "mpcc"
@@ -220,9 +221,9 @@ def simulate(
                         if done:
                             break
 
-                    controller.episode_callback()  # Update the controller internal state and models.
+                    #controller.episode_callback()  # Update the controller internal state and models.
                     log_episode_stats(obs, info, config, curr_time)
-                    persistent_info = controller.episode_reset()
+                    #persistent_info = controller.episode_reset()
 
     # Close the environment
     env.close()

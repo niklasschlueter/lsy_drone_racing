@@ -264,7 +264,7 @@ def plot_normalized_error(errors, paths):
 def run_plots(controller: str = "pid"):
     root = Path(__file__).parents[1] / "saves/exp_prediction_error" / controller
     #paths = [root / "linear", root / "acados", root / "learning"]
-    predictors = ["linear", "learning", "acados"]
+    predictors = ["no_learning", "linear", "learning", "acados"]
 
     linear_times = []
     linear_crash = []
@@ -320,7 +320,7 @@ def run_plots(controller: str = "pid"):
                     acados_times.append(finish_time)
                     acados_crash.append(crash)
                     acados_win.append(winner)
-                if path.name == "learning" and i == 0:
+                if path.name == "no_learning":# and i == 0:
                     untrained_times.append(finish_time)
                     untrained_crash.append(crash)
                     untrained_win.append(winner)
@@ -345,6 +345,13 @@ def run_plots(controller: str = "pid"):
     trained_stats = get_stats(trained_times, trained_crash, trained_win)
     linear_stats = get_stats(linear_times, linear_crash, linear_win)
     acados_stats = get_stats(acados_times, acados_crash, acados_win)
+
+
+    import seaborn as sns
+    #colors = ["orange", "red", "blue", "green"]
+    colors = sns.color_palette("colorblind")
+    #sns.set_theme(style="whitegrid")
+    sns.set_theme(style="whitegrid", context="talk", palette="colorblind")
 
     # Set up the plot
     #fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(15, 5))
@@ -375,11 +382,6 @@ def run_plots(controller: str = "pid"):
     print(f"shape lap time data acados:{np.shape(acados_times)}")
     assert(len(lap_time_data) == len(labels))
     
-    import seaborn as sns
-    #colors = ["orange", "red", "blue", "green"]
-    colors = sns.color_palette("colorblind")
-    #sns.set_theme(style="whitegrid")
-    sns.set_theme(style="whitegrid", context="talk", palette="colorblind")
     bar_width = 0.3
     ## Create box plot on ax1
     #ax1.boxplot(
@@ -392,7 +394,6 @@ def run_plots(controller: str = "pid"):
 
     ax1.set_ylabel("Lap Time (s)")
     ax1.set_title("Mean Lap Times")
-    ax1.grid(True)
 
     ## Plot crash rates
     #crashes = [untrained_stats[2], trained_stats[2], linear_stats[2], acados_stats[2]]
