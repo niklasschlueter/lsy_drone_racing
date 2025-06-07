@@ -7,6 +7,19 @@ import numpy as np
 import pandas as pd
 import sys
 
+import matplotlib
+matplotlib.use('TkAgg')
+from matplotlib import pyplot as plt
+plt.rcParams.update({
+    "text.usetex": True,
+    "font.family": "Times New Roman",
+    "font.size": 12,
+    "pgf.texsystem": "pdflatex",
+    "axes.grid": True
+})
+#plt.rcParams['axes.grid'] = True
+
+
 from mpcc.logging.data_logging import DataVarIndex
 
 def load_csvs_as_dfs_from_folder(path: Path) -> list[pd.DataFrame]:
@@ -942,24 +955,26 @@ class Plotter:
             label=r"$Delta F collective cmd$",
         )
         ax.legend()
+        ax.grid(True)
 
         ax = fig.add_subplot(5, 1, 2)
         ax.set_title("Delta Roll Cmd")
         ax.set_xlabel(r"$t$ [s]")
-        ax.set_ylabel(r"$Delta Roll Cmd [r/s]")
+        ax.set_ylabel(r"$Delta Roll Cmd [r/s]$")
 
         ax.plot(
             timesteps,
             df.iloc[:, DataVarIndex.DELTA_R_CMD],
             "-",
-            label=r"$Delta Roll CMD$",
+            label=r"$Delta Roll cmd$",
         )
         ax.legend()
+        ax.grid(True)
 
         ax = fig.add_subplot(5, 1, 3)
         ax.set_title("Delta Pitch Cmd")
         ax.set_xlabel(r"$t$ [s]")
-        ax.set_ylabel(r"$Delta Pitch Cmd [r/s]")
+        ax.set_ylabel(r"$Delta Pitch Cmd [r/s]$")
 
         ax.plot(
             timesteps,
@@ -968,11 +983,12 @@ class Plotter:
             label=r"$Delta Pitch cmd$",
         )
         ax.legend()
+        ax.grid(True)
 
         ax = fig.add_subplot(5, 1, 4)
         ax.set_title("Delta Yaw Cmd")
         ax.set_xlabel(r"$t$ [s]")
-        ax.set_ylabel(r"$Delta Yaw Cmd [r/s]")
+        ax.set_ylabel(r"$Delta Yaw Cmd [r/s]$")
 
         ax.plot(
             timesteps,
@@ -981,11 +997,12 @@ class Plotter:
             label=r"$Delta Yaw cmd$",
         )
         ax.legend()
+        ax.grid(True)
 
         ax = fig.add_subplot(5, 1, 5)
         ax.set_title("Delta V theta")
         ax.set_xlabel(r"$t$ [s]")
-        ax.set_ylabel(r"$Delta v_{theta} [m/s^2]")
+        ax.set_ylabel(r"$Delta v_{theta} [m/s^2]$")
 
         ax.plot(
             timesteps,
@@ -994,6 +1011,7 @@ class Plotter:
             label=r"$Delta V theta$",
         )
         ax.legend()
+        ax.grid(True)
 
         return fig
 
@@ -1423,27 +1441,37 @@ def plot_table_stats():
 
 if __name__ == "__main__":
     #plot_table_stats()
-    #def plot_data_cli(prefix="sim", save=True, show=False):
-    #    drone_idxs = np.arange(2)
-    #    for drone_index in drone_idxs:
-    #        # Go over a number of iterations
-    #        for it in range(10):
-    #            try:
-    #                plotter = Plotter()
-    #                file_path = (
-    #                    Path(__file__).parent.parent
-    #                    / Path("data")
-    #                    / f"last_run_{prefix}_id{drone_index}_it{it}.csv"
-    #                )
-    #                save_path = Path(__file__).parent / "plots" / f"last_run_{prefix}_id{drone_index}_it{it}"
-    #                print(f"plotting for index {drone_index}")
-    #                print(f"plotting from path {file_path}")
-    #                print(f"saving to {save_path}")
-    #                plotter.plot_data_single_it(file_path, show, save, save_path=save_path)
-    #                plotter.plot_data_multi_it(file_path, show, save, save_path=save_path)
-    #            except Exception as e:
-    #                print(f"plotting for index {drone_index} not possible: {e}")
-    #                # Break if one the data file for one iteration does not exist under the assumption that the other ones also dont exist.
-    #                break
+    predictors = ["acados", "learning", "linear"]
+    opp_ctrls = ["pid", "learning"]
+    repetitions= np.arange(10.0)
+    taus = np.arange(5)
+    def plot_data_cli(prefix="sim", save=True, show=False):
+        #drone_idxs = np.arange(2)
+        #for drone_index in drone_idxs:
+        for opp_ctrl in opp_ctrls:
+            for predictor in predictors:
+                for repetition in repetitions:
+                    for tau in taus:
+                        try:
+                            plotter = Plotter()
+                            file_path = (
+                                Path(__file__).parent.parent
+                                / Path("saves")
+                                / Path("exp_prediction_error")
+                                / Path(opp_ctrl)
+                                / Path(predictor)
+                                / Path(str(repetition))
+                                / f"run00{int(tau)}.csv"
+                            )
+                            save_path = Path(__file__).parent / "single" / opp_ctrl / predictor / str(repetition) / f"run00{int(tau)}"
+                            print(f"plotting from path {file_path}")
+                            print(f"saving to {save_path}")
+                            plotter.plot_data_single_it(file_path, show, save, save_path=save_path)
+                            plotter.plot_data_multi_it(file_path, show, save, save_path=save_path)
+                        except Exception as e:
+                            print(f"plotting for index {0} not possible: {e}")
+                            # Break if one the data file for one iteration does not exist under the assumption that the other ones also dont exist.
+                            break
+                        plt.close("all")
 
-    #fire.Fire(plot_data_cli)
+    fire.Fire(plot_data_cli)
