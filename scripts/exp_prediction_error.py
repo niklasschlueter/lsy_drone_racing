@@ -146,6 +146,8 @@ def simulate(
                     controller.controller_1.data_logger = DataLogger(
                         str(save_path / f"run{n_run:03d}.csv"), "attitude"
                     )
+                    print(f'saving data to: {str(save_path / f"run{n_run:03d}.csv")}')
+
 
                     while True:
                         curr_time = i / config.env.freq

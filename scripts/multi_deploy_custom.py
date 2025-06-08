@@ -62,6 +62,8 @@ def control_loop(rank: int, config: ConfigDict, start_barrier: Barrier):
         obs, info = env.reset(options=options)
         info["id"] = rank
         info["n_run"] = 0 # TODO: Use this 
+        # TODO: Specify log path more clearly
+        info["log_path"] = Path(__file__).parents[1] / "saves/deploy"/ f"run{info['n_run']:03d}.csv"
         next_obs = obs  # Set next_obs to avoid errors when the loop never enters
 
         control_path = Path(__file__).parents[1] / "lsy_drone_racing/control"

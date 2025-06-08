@@ -141,6 +141,314 @@ class Plotter:
 
         return fig
 
+    #def plot_position_with_gates(self):
+    #    # Read the data from the csv file
+    #    df = pd.read_csv(self.file_path)
+
+    #    gate_1 = np.array([df.iloc[0, DataVarIndex.GATE_POS_X_1.value], df.iloc[0, DataVarIndex.GATE_POS_Y_1.value], df.iloc[0, DataVarIndex.GATE_POS_Z_1.value]])
+    #    gate_2 = np.array([df.iloc[0, DataVarIndex.GATE_POS_X_2.value], df.iloc[0, DataVarIndex.GATE_POS_Y_2.value], df.iloc[0, DataVarIndex.GATE_POS_Z_2.value]])
+    #    gate_3 = np.array([df.iloc[0, DataVarIndex.GATE_POS_X_3.value], df.iloc[0, DataVarIndex.GATE_POS_Y_3.value], df.iloc[0, DataVarIndex.GATE_POS_Z_3.value]])
+    #    gate_4 = np.array([df.iloc[0, DataVarIndex.GATE_POS_X_4.value], df.iloc[0, DataVarIndex.GATE_POS_Y_4.value], df.iloc[0, DataVarIndex.GATE_POS_Z_4.value]])
+
+    #    #rpy_1 = np.array([df.iloc[0, DataVarIndex.GATE_R_1.value], df.iloc[0, DataVarIndex.GATE_P_1.value], df.iloc[0, DataVarIndex.GATE_Y_1.value]])
+    #    #rpy_2 = np.array([df.iloc[0, DataVarIndex.GATE_R_2.value], df.iloc[0, DataVarIndex.GATE_P_2.value], df.iloc[0, DataVarIndex.GATE_Y_2.value]])
+    #    #rpy_3 = np.array([df.iloc[0, DataVarIndex.GATE_R_3.value], df.iloc[0, DataVarIndex.GATE_P_3.value], df.iloc[0, DataVarIndex.GATE_Y_3.value]])
+    #    #rpy_4 = np.array([df.iloc[0, DataVarIndex.GATE_R_4.value], df.iloc[0, DataVarIndex.GATE_P_4.value], df.iloc[0, DataVarIndex.GATE_Y_4.value]])
+
+
+    #    # Extract gate yaw angles (only yaw is relevant)
+    #    yaw_1 = df.iloc[0, DataVarIndex.GATE_Y_1.value]
+    #    yaw_2 = df.iloc[0, DataVarIndex.GATE_Y_2.value]
+    #    yaw_3 = df.iloc[0, DataVarIndex.GATE_Y_3.value]
+    #    yaw_4 = df.iloc[0, DataVarIndex.GATE_Y_4.value]
+    #    
+
+
+    #    # Function to plot a gate line
+    #    def plot_gate(ax, pos, yaw, length=0.2):
+    #        dx = np.cos(yaw) * length
+    #        dy = np.sin(yaw) * length
+    #        start = [pos[0] - dx, pos[1] - dy]
+    #        end = [pos[0] + dx, pos[1] + dy]
+    #        ax.plot([start[0], end[0]], [start[1], end[1]], 'k-', linewidth=2)
+
+
+
+    #    plt.plot
+
+
+    #    fig = plt.figure(figsize=(16, 9))
+    #    ## X-Y Plane
+    #    ax = fig.add_subplot(2, 2, 1)
+    #    ax.set_title("XY")
+    #    ax.set_xlabel("X [m]")
+    #    ax.set_ylabel("Y [m]")
+    #    ax.axis("equal")
+    #    ax.plot(
+    #        df.iloc[:, DataVarIndex.DES_POS_X.value],
+    #        df.iloc[:, DataVarIndex.DES_POS_Y.value],
+    #        "--",
+    #        label="des",
+    #    )
+    #    ax.plot(
+    #        df.iloc[:, DataVarIndex.POS_X.value],
+    #        df.iloc[:, DataVarIndex.POS_Y.value],
+    #        label="meas",
+    #    )
+
+    #    # Plot gates as black lines
+    #    plot_gate(ax, gate_1, yaw_1)
+    #    plot_gate(ax, gate_2, yaw_2)
+    #    plot_gate(ax, gate_3, yaw_3)
+    #    plot_gate(ax, gate_4, yaw_4)
+    #    ax.legend()
+
+    #    ## X-Z Plane
+    #    ax = fig.add_subplot(2, 2, 2)
+    #    ax.set_title("XZ")
+    #    ax.set_xlabel("X [m]")
+    #    ax.set_ylabel("Z [m]")
+    #    ax.axis("equal")
+    #    ax.plot(
+    #        df.iloc[:, DataVarIndex.DES_POS_X.value],
+    #        df.iloc[:, DataVarIndex.DES_POS_Z.value],
+    #        "--",
+    #        label="des",
+    #    )
+    #    ax.plot(
+    #        df.iloc[:, DataVarIndex.POS_X.value],
+    #        df.iloc[:, DataVarIndex.POS_Z.value],
+    #        label="meas",
+    #    )
+    #    ax.legend()
+
+    #    ## Y-Z Plane
+    #    ax = fig.add_subplot(2, 2, 3)
+    #    ax.set_title("YZ")
+    #    ax.set_xlabel("Y [m]")
+    #    ax.set_ylabel("Z [m]")
+    #    ax.axis("equal")
+    #    ax.plot(
+    #        df.iloc[:, DataVarIndex.DES_POS_Y.value],
+    #        df.iloc[:, DataVarIndex.DES_POS_Z.value],
+    #        "--",
+    #        label="des",
+    #    )
+    #    ax.plot(
+    #        df.iloc[:, DataVarIndex.POS_Y.value],
+    #        df.iloc[:, DataVarIndex.POS_Z.value],
+    #        label="meas",
+    #    )
+    #    ax.legend()
+
+    #    ## 3d
+    #    ax = fig.add_subplot(2, 2, 4, projection="3d")
+    #    ax.set_title("3d Trajectory")
+    #    ax.set_xlabel("X [m]")
+    #    ax.set_ylabel("Y [m]")
+    #    ax.set_zlabel("Z [m]")
+    #    ax.plot(
+    #        df.iloc[:, DataVarIndex.DES_POS_X.value],
+    #        df.iloc[:, DataVarIndex.DES_POS_Y.value],
+    #        df.iloc[:, DataVarIndex.DES_POS_Z.value],
+    #        "--",
+    #        label="des",
+    #    )
+    #    ax.plot(
+    #        df.iloc[:, DataVarIndex.POS_X.value],
+    #        df.iloc[:, DataVarIndex.POS_Y.value],
+    #        df.iloc[:, DataVarIndex.POS_Z.value],
+    #        label="meas",
+    #    )
+    #    set_axes_equal(ax)
+
+    #    ax.legend()
+
+    #    return fig
+    def plot_position_with_gates(self):
+        import matplotlib.pyplot as plt
+        import numpy as np
+        import pandas as pd
+
+        df = pd.read_csv(self.file_path)
+
+        gate_positions = [
+            np.array([df.iloc[0, DataVarIndex.GATE_POS_X_1.value], df.iloc[0, DataVarIndex.GATE_POS_Y_1.value], df.iloc[0, DataVarIndex.GATE_POS_Z_1.value]]),
+            np.array([df.iloc[0, DataVarIndex.GATE_POS_X_2.value], df.iloc[0, DataVarIndex.GATE_POS_Y_2.value], df.iloc[0, DataVarIndex.GATE_POS_Z_2.value]]),
+            np.array([df.iloc[0, DataVarIndex.GATE_POS_X_3.value], df.iloc[0, DataVarIndex.GATE_POS_Y_3.value], df.iloc[0, DataVarIndex.GATE_POS_Z_3.value]]),
+            np.array([df.iloc[0, DataVarIndex.GATE_POS_X_4.value], df.iloc[0, DataVarIndex.GATE_POS_Y_4.value], df.iloc[0, DataVarIndex.GATE_POS_Z_4.value]]),
+        ]
+
+        gate_yaws = [
+            df.iloc[0, DataVarIndex.GATE_Y_1.value],
+            df.iloc[0, DataVarIndex.GATE_Y_2.value],
+            df.iloc[0, DataVarIndex.GATE_Y_3.value],
+            df.iloc[0, DataVarIndex.GATE_Y_4.value],
+        ]
+
+        def get_square_corners(center, yaw, size=0.4):
+            half = size / 2
+            corners = np.array([
+                [-half, -half],
+                [half, -half],
+                [half, half],
+                [-half, half],
+                [-half, -half]
+            ])
+            rot = np.array([
+                [np.cos(yaw), -np.sin(yaw)],
+                [np.sin(yaw),  np.cos(yaw)]
+            ])
+            rotated = corners @ rot.T
+            return rotated + center[:2]  # Only XY
+
+        def get_vertical_square(center, yaw, size=0.4):
+            half = size / 2
+            # Define corners in the gate's local frame (Y forward, Z up)
+            local_corners = np.array([
+                [-half, -half],  # left-bottom
+                [ half, -half],  # right-bottom
+                [ half,  half],  # right-top
+                [-half,  half],  # left-top
+                [-half, -half],  # close the loop
+            ])
+            # Rotate around Z (affects X and Y)
+            rot = np.array([
+                [np.cos(yaw), -np.sin(yaw)],
+                [np.sin(yaw),  np.cos(yaw)],
+            ])
+            # Apply rotation to Y direction, Z stays
+            rotated_xy = local_corners[:, 0:1] * rot[0] + local_corners[:, 1:1+1] * np.array([0, 0]) + center[0:2]  # just shift X and Y
+            x = center[0] + local_corners[:, 0] * np.cos(yaw)
+            y = center[1] + local_corners[:, 0] * np.sin(yaw)
+            z = center[2] + local_corners[:, 1]
+            return x, y, z
+
+        def plot_square_xy(ax, center, yaw):
+            corners = get_square_corners(center, yaw)
+            ax.plot(corners[:, 0], corners[:, 1], 'k-')
+
+        def plot_square_xz(ax, center, yaw):
+            corners_xy = get_square_corners(center, yaw)
+            ax.plot(corners_xy[:, 0], [center[2]] * len(corners_xy), 'k-')
+
+        def plot_square_yz(ax, center, yaw):
+            corners_xy = get_square_corners(center, yaw)
+            ax.plot(corners_xy[:, 1], [center[2]] * len(corners_xy), 'k-')
+
+        def plot_square_3d(ax, center, yaw):
+            corners = get_square_corners(center, yaw)
+            z = center[2]
+            ax.plot3D(corners[:, 0], corners[:, 1], [z]*len(corners), 'k-')
+
+        def plot_gate_xy(ax, center, yaw):
+            x, y, _ = get_vertical_square(center, yaw)
+            ax.plot(x, y, 'k-')
+
+        def plot_gate_xz(ax, center, yaw):
+            x, _, z = get_vertical_square(center, yaw)
+            ax.plot(x, z, 'k-')
+
+        def plot_gate_yz(ax, center, yaw):
+            _, y, z = get_vertical_square(center, yaw)
+            ax.plot(y, z, 'k-')
+
+
+        def plot_gate_3d(ax, center, yaw):
+            x, y, z = get_vertical_square(center, yaw)
+            ax.plot3D(x, y, z, 'k-')
+
+
+        fig = plt.figure(figsize=(16, 9))
+
+        ## XY Plane
+        ax = fig.add_subplot(2, 2, 1)
+        ax.set_title("XY")
+        ax.set_xlabel("X [m]")
+        ax.set_ylabel("Y [m]")
+        ax.axis("equal")
+        ax.plot(
+            df.iloc[:, DataVarIndex.DES_POS_X.value],
+            df.iloc[:, DataVarIndex.DES_POS_Y.value],
+            "--", label="des"
+        )
+        ax.plot(
+            df.iloc[:, DataVarIndex.POS_X.value],
+            df.iloc[:, DataVarIndex.POS_Y.value],
+            label="meas"
+        )
+        for pos, yaw in zip(gate_positions, gate_yaws):
+            plot_gate_xy(ax, pos, yaw)
+        ax.legend()
+
+        ## XZ Plane
+        ax = fig.add_subplot(2, 2, 2)
+        ax.set_title("XZ")
+        ax.set_xlabel("X [m]")
+        ax.set_ylabel("Z [m]")
+        ax.axis("equal")
+        ax.plot(
+            df.iloc[:, DataVarIndex.DES_POS_X.value],
+            df.iloc[:, DataVarIndex.DES_POS_Z.value],
+            "--", label="des"
+        )
+        ax.plot(
+            df.iloc[:, DataVarIndex.POS_X.value],
+            df.iloc[:, DataVarIndex.POS_Z.value],
+            label="meas"
+        )
+        for pos, yaw in zip(gate_positions, gate_yaws):
+            plot_gate_xz(ax, pos, yaw)
+        ax.legend()
+
+        ## YZ Plane
+        ax = fig.add_subplot(2, 2, 3)
+        ax.set_title("YZ")
+        ax.set_xlabel("Y [m]")
+        ax.set_ylabel("Z [m]")
+        ax.axis("equal")
+        ax.plot(
+            df.iloc[:, DataVarIndex.DES_POS_Y.value],
+            df.iloc[:, DataVarIndex.DES_POS_Z.value],
+            "--", label="des"
+        )
+        ax.plot(
+            df.iloc[:, DataVarIndex.POS_Y.value],
+            df.iloc[:, DataVarIndex.POS_Z.value],
+            label="meas"
+        )
+        for pos, yaw in zip(gate_positions, gate_yaws):
+            plot_gate_yz(ax, pos, yaw)
+        ax.legend()
+
+        ## 3D Plot
+        ax = fig.add_subplot(2, 2, 4, projection="3d")
+        ax.set_title("3d Trajectory")
+        ax.set_xlabel("X [m]")
+        ax.set_ylabel("Y [m]")
+        ax.set_zlabel("Z [m]")
+        ax.plot(
+            df.iloc[:, DataVarIndex.DES_POS_X.value],
+            df.iloc[:, DataVarIndex.DES_POS_Y.value],
+            df.iloc[:, DataVarIndex.DES_POS_Z.value],
+            "--", label="des"
+        )
+        ax.plot(
+            df.iloc[:, DataVarIndex.POS_X.value],
+            df.iloc[:, DataVarIndex.POS_Y.value],
+            df.iloc[:, DataVarIndex.POS_Z.value],
+            label="meas"
+        )
+        for pos, yaw in zip(gate_positions, gate_yaws):
+            plot_gate_3d(ax, pos, yaw)
+
+        set_axes_equal(ax)
+        ax.legend()
+
+        return fig
+
+
+
     def plot_velocity(self):
         # Read the data from the csv file
         df = pd.read_csv(self.file_path)
@@ -1038,6 +1346,9 @@ class Plotter:
         figs.append(self.plot_position())
         plot_names.append("position")
 
+        figs.append(self.plot_position_with_gates())
+        plot_names.append("position with gates")
+
         figs.append(self.plot_velocity())
         plot_names.append("velocity")
 
@@ -1439,7 +1750,7 @@ def plot_table_stats():
         plt.show()
 
 
-if __name__ == "__main__":
+def plot_all():
     #plot_table_stats()
     predictors = ["acados", "learning", "linear"]
     opp_ctrls = ["pid", "learning"]
@@ -1475,3 +1786,39 @@ if __name__ == "__main__":
                         plt.close("all")
 
     fire.Fire(plot_data_cli)
+
+
+def plot_one():
+    #plot_table_stats()
+    n_run = 0
+    
+    #predictors = ["acados", "learning", "linear"]
+    #opp_ctrls = ["pid", "learning"]
+    #repetitions= np.arange(10.0)
+    #taus = np.arange(5)
+    def plot_data_cli(prefix="sim", save=True, show=False):
+        #drone_idxs = np.arange(2)
+        #for drone_index in drone_idxs:
+        try:
+            plotter = Plotter()
+            file_path = (
+                Path(__file__).parent.parent
+                / Path("saves")
+                / "deploy"
+                / f"run00{int(n_run)}.csv"
+            )
+            save_path = Path(__file__).parent / "single" / "deploy" / f"run00{int(n_run)}"
+            print(f"plotting from path {file_path}")
+            print(f"saving to {save_path}")
+            plotter.plot_data_single_it(file_path, show, save, save_path=save_path)
+            plotter.plot_data_multi_it(file_path, show, save, save_path=save_path)
+        except Exception as e:
+            print(f"plotting for index {0} not possible: {e}")
+            # Break if one the data file for one iteration does not exist under the assumption that the other ones also dont exist.
+        plt.close("all")
+
+    fire.Fire(plot_data_cli)
+
+
+if __name__ == "__main__":
+    plot_one()
