@@ -21,7 +21,7 @@ from mpcc.logging.data_logging import DataLogger
 
 from lsy_drone_racing.control.attitude_controller_custom import AttitudeController
 from lsy_drone_racing.utils import load_config, load_controller
-from lsy_drone_racing.utils.utils import render_trace, rotation_matrix_from_points
+from lsy_drone_racing.utils.utils import render_trace, _rotation_matrix_from_points
 
 if TYPE_CHECKING:
     from ml_collections import ConfigDict
@@ -177,7 +177,7 @@ def simulate(
                                         # Calculate all the things to be able to plot the trajectory
                                         traj_pos.append(traj)  # ctrl_info[_id]["trajectory"])#.T
                                         traj_rot.append(
-                                            rotation_matrix_from_points(
+                                            _rotation_matrix_from_points(
                                                 traj_pos[-1][:-1, ...], traj_pos[-1][1:, ...]
                                             )
                                         )
@@ -192,7 +192,7 @@ def simulate(
                                         # Render the horizon
                                         if len(ctrl_info[_id]["horizon"]) > 1:
                                             horiz_pos = ctrl_info[_id]["horizon"][:, :3]
-                                            horiz_rot = rotation_matrix_from_points(
+                                            horiz_rot = _rotation_matrix_from_points(
                                                 horiz_pos[:-1, ...], horiz_pos[1:, ...]
                                             )
                                             render_trace(
@@ -205,7 +205,7 @@ def simulate(
                                         # Render opp prediction
                                         if len(ctrl_info[_id]["opp_prediction"]) > 1:
                                             horiz_pos = ctrl_info[_id]["opp_prediction"][:, :3]
-                                            horiz_rot = rotation_matrix_from_points(
+                                            horiz_rot = _rotation_matrix_from_points(
                                                 horiz_pos[:-1, ...], horiz_pos[1:, ...]
                                             )
                                             render_trace(

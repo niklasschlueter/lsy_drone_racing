@@ -16,11 +16,15 @@ from typing import TYPE_CHECKING
 import matplotlib.pyplot as plt
 import munch
 import numpy as np
-from crazyflow.constants import MASS
+#from crazyflow.constants import MASS
 from inv_rl.control.quadrotor.attitude_mpc import create_integrator
 from mpcc.planners.minsnap_traj.planner_minsnap_sym import PolynomialPlanner
 from scipy.spatial.transform import Rotation as R
 from scipy.spatial.transform import Rotation as Rot
+from lsy_drone_racing.control import Controller
+
+## Use my own mass - crazyflow mass is 0.027??
+MASS = 0.035
 
 if TYPE_CHECKING:
     from numpy.typing import NDArray
@@ -76,7 +80,7 @@ class SplineTracker:
     #        return theta +0.15
 
 
-class AttitudeController:
+class AttitudeController(Controller):
     """Example of a controller using the collective thrust and attitude interface."""
 
     def __init__(self, obs: dict[str, NDArray[np.floating]], info: dict, config: dict):
@@ -100,7 +104,6 @@ class AttitudeController:
         self.g = 9.81
         self._tick = 0
 
-        self._finished = False
 
         self._id = info["id"]
 
@@ -154,7 +157,7 @@ class AttitudeController:
         ) = planner.plan(start_pos, gates_pos, gates_rpy)
 
         #time_scaling = info.get("PID_time_scaling", 1.0)
-        time_scaling = 8.0
+        time_scaling = 6.0
         no_samples = int(approx_path_length * self.freq * time_scaling)
         self.ref = np.zeros((3, no_samples))
         for i, t in enumerate(np.linspace(0, self.theta_max, no_samples)):
@@ -193,6 +196,8 @@ class AttitudeController:
         self.last_v_theta = 0.01
         self.acados_integrator = create_integrator(self.dt * 10, 10)
 
+        self._finished = False
+
     def compute_control(
         self, obs: dict[str, NDArray[np.floating]], info: dict | None = None
     ) -> NDArray[np.floating]:
@@ -208,7 +213,9 @@ class AttitudeController:
         """
         i = min(self._tick, len(self.x_des) - 1)
         # if i == len(self.x_des) - 1:  # Maximum duration reached
-        self._finished = obs["target_gate"][self._id] == -1
+        #self._finished = obs["target_gate"][self._id] == -1
+        if i == len(self.x_des) - 1:  # Maximum duration reached
+            self._finished = True
 
         des_pos = np.array([self.x_des[i], self.y_des[i], self.z_des[i]])
         des_vel = np.zeros(3)

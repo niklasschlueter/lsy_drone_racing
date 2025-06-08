@@ -26,7 +26,7 @@ if TYPE_CHECKING:
     from lsy_drone_racing.control.controller import Controller
     from lsy_drone_racing.envs.multi_drone_race import MultiDroneRacingEnv
 
-from lsy_drone_racing.utils.utils import render_trace, rotation_matrix_from_points
+from lsy_drone_racing.utils.utils import render_trace, _rotation_matrix_from_points
 
 logger = logging.getLogger(__name__)
 
@@ -130,7 +130,7 @@ def simulate(
                                 # Calculate all the things to be able to plot the trajectory
                                 traj_pos.append(traj)  # ctrl_info[_id]["trajectory"])#.T
                                 traj_rot.append(
-                                    rotation_matrix_from_points(
+                                    _rotation_matrix_from_points(
                                         traj_pos[-1][:-1, ...], traj_pos[-1][1:, ...]
                                     )
                                 )
@@ -145,7 +145,7 @@ def simulate(
                                 # Render the horizon
                                 if len(ctrl_info[_id]["horizon"]) > 1:
                                     horiz_pos = ctrl_info[_id]["horizon"][:, :3]
-                                    horiz_rot = rotation_matrix_from_points(
+                                    horiz_rot = _rotation_matrix_from_points(
                                         horiz_pos[:-1, ...], horiz_pos[1:, ...]
                                     )
                                     render_trace(
@@ -158,7 +158,7 @@ def simulate(
                                 # Render opp prediction
                                 if len(ctrl_info[_id]["opp_prediction"]) > 1:
                                     horiz_pos = ctrl_info[_id]["opp_prediction"][:, :3]
-                                    horiz_rot = rotation_matrix_from_points(
+                                    horiz_rot = _rotation_matrix_from_points(
                                         horiz_pos[:-1, ...], horiz_pos[1:, ...]
                                     )
                                     render_trace(

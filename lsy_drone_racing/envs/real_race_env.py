@@ -605,18 +605,25 @@ class RealMultiDroneRaceEnv(RealRaceCoreEnv, Env):
         return obs, reward[self.rank], terminated[self.rank], truncated[self.rank], info
 
 
+#def thrust2pwm(thrust: float) -> float:
+#    """Convert thrust to pwm using a quadratic function.
+#
+#    TODO: Remove in favor of lsy_models
+#    """
+#    a_coeff = -1.1264
+#    b_coeff = 2.2541
+#    c_coeff = 0.0209
+#    pwm_max = 65535.0
+#
+#    pwm = a_coeff * thrust * thrust + b_coeff * thrust + c_coeff
+#    pwm = np.maximum(pwm, 0.0)
+#    pwm = np.minimum(pwm, 1.0)
+#    thrust_pwm = pwm * pwm_max
+#    return thrust_pwm
+
 def thrust2pwm(thrust: float) -> float:
-    """Convert thrust to pwm using a quadratic function.
-
-    TODO: Remove in favor of lsy_models
-    """
-    a_coeff = -1.1264
-    b_coeff = 2.2541
-    c_coeff = 0.0209
-    pwm_max = 65535.0
-
-    pwm = a_coeff * thrust * thrust + b_coeff * thrust + c_coeff
-    pwm = np.maximum(pwm, 0.0)
-    pwm = np.minimum(pwm, 1.0)
-    thrust_pwm = pwm * pwm_max
-    return thrust_pwm
+    """Convert thrust to pwm."""
+    # New thrust function -> works with new firmware by marcel.
+    #print(f"commanded thrust: {thrust}")
+    pwm = thrust / (4 * 0.1125) * 65535.0
+    return min(pwm, 65534.0)

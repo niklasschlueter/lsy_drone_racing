@@ -83,7 +83,6 @@ def load_config(path: Path) -> ConfigDict:
     with open(path, "r") as f:
         return ConfigDict(toml.load(f))
 
-
 def plot_mujoco_marker(env, pos, size=np.array([0.03, 0.03, 0.03]), rgba=np.array([0.8, 0.2, 0.2, 1.0])):
     env.unwrapped.sim.viewer.viewer.add_marker(
     type=mujoco.mjtGeom.mjGEOM_SPHERE, size=size, pos=pos, rgba=rgba)

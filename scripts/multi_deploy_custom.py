@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 """Launch script for the real race with multiple drones.
 
 Usage:
@@ -39,7 +38,7 @@ def control_loop(rank: int, config: ConfigDict, start_barrier: Barrier):
     config.env.freq = config.env.kwargs[rank]["freq"]
     config.env.sensor_range = config.env.kwargs[rank]["sensor_range"]
     config.env.control_mode = config.env.kwargs[rank]["control_mode"]
-
+    logger.error(f"Starting drone {rank}")
     env: RealMultiDroneRaceEnv = gymnasium.make(
         "RealMultiDroneRacing-v0",
         drones=config.deploy.drones,
@@ -50,13 +49,19 @@ def control_loop(rank: int, config: ConfigDict, start_barrier: Barrier):
         sensor_range=config.env.sensor_range,
         control_mode=config.env.control_mode,
     )
+    logger.error(
+        f"Drone {rank} env created with controller {config.controller[rank]['file']}"
+        f" for drone {config.deploy.drones[rank]['id']} on channel {config.deploy.drones[rank]['channel']}"
+    )
     try:
         options = {
             "check_drone_start_pos": config.deploy.check_drone_start_pos,
             "check_race_track": config.deploy.check_race_track,
-            "practice_without_track_objects": config.deploy.practice_without_track_objects,
+            "real_track_objects": config.deploy.real_track_objects,
         }
         obs, info = env.reset(options=options)
+        info["id"] = rank
+        info["n_run"] = 0 # TODO: Use this 
         next_obs = obs  # Set next_obs to avoid errors when the loop never enters
 
         control_path = Path(__file__).parents[1] / "lsy_drone_racing/control"
@@ -70,11 +75,10 @@ def control_loop(rank: int, config: ConfigDict, start_barrier: Barrier):
         while rclpy.ok():
             t_loop = time.perf_counter()
             obs, info = env.unwrapped.obs(), env.unwrapped.info()
-            # Enable this if you want to test with single drone controllers. TODO: Remove
-            obs = {k: v[rank] for k, v in obs.items()}
-            action = controller.compute_control(obs, info)
+            action, _ = controller.compute_control(obs, info)
             next_obs, reward, terminated, truncated, info = env.step(action)
             controller.step_callback(action, next_obs, reward, terminated, truncated, info)
+            #print(f"Race time: {time.perf_counter() - start_time:.3f}s")
             if terminated or truncated:
                 break
             if (dt := (time.perf_counter() - t_loop)) < (1 / config.env.freq):
@@ -86,14 +90,19 @@ def control_loop(rank: int, config: ConfigDict, start_barrier: Barrier):
                     throttle_duration_sec=2,
                 )
         ep_time = time.perf_counter() - start_time
-        finished_track = (next_obs["target_gate"] == -1)[rank]
-        print(f"Track time: {ep_time:.3f}s" if finished_track else "Task not completed")
+        success = (next_obs["target_gate"] == -1)[rank]
+        drone_id = config.deploy.drones[rank]["id"]
+        drone_controller = config.controller[rank]["file"]
+        print(
+            f"Drone {drone_id} with controller {drone_controller} finished track: {success} \n"
+            + (f"Track time: {ep_time:.3f}s" if success else "Task not completed")
+        )
     finally:
         node.destroy_node()
         env.close()
 
 
-def main(config: str = "multi_level3.toml"):
+def main(config: str = "deploy.toml"):
     """Deployment script to run the controller on the real drone.
 
     Args:
