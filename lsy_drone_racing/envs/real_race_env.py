@@ -21,6 +21,7 @@ import jax
 import numpy as np
 import rclpy
 from cflib.crazyflie import Crazyflie, Localization
+from cflib.crazyflie.mem import MemoryElement
 from cflib.crtp.crtpstack import CRTPPacket, CRTPPort
 from cflib.utils.power_switch import PowerSwitch
 from gymnasium import Env
@@ -129,6 +130,7 @@ class RealRaceCoreEnv:
     def _reset(self, *, seed: int | None = None, options: dict | None = None) -> tuple[dict, dict]:
         """Reset the environment and return the initial observation and info."""
         options = {} if options is None else options
+
         # Update the position of gates and obstacles with the real positions measured from Mocap. If
         # disabled, they are equal to the nominal positions defined in the track config.
         if not options.get("practice_without_track_objects", False):
@@ -143,8 +145,13 @@ class RealRaceCoreEnv:
             for i in range(self.n_gates):
                 self.gates.pos[i, ...] = pos[f"gate{i + 1}"]
                 self.gates.quat[i, ...] = quat[f"gate{i + 1}"]
+                # HACK TO MAKE ALWAYS VISIBLE
+                self.gates.nominal_pos[i, ...] = pos[f"gate{i + 1}"]
+                self.gates.nominal_quat[i, ...] = quat[f"gate{i + 1}"]
             for i in range(self.n_obstacles):
                 self.obstacles.pos[i, ...] = pos[f"obstacle{i + 1}"]
+                # HACK TO MAKE ALWAYS VISIBLE
+                self.obstacles.nominal_pos[i, ...] = pos[f"obstacle{i + 1}"]
             ros_connector.close()
 
             if options.get("check_race_track", True):  # If no track objects are used, skip this
@@ -156,9 +163,25 @@ class RealRaceCoreEnv:
         self._reset_env_data(self.data)
         self._reset_drone()
 
+        drone_pos = np.stack([self._ros_connector.pos[drone] for drone in self.drone_names])
+        assert drone_pos.dtype == np.float32, "Drone position must be of type float32"
+        drone_quat = np.stack([self._ros_connector.quat[drone] for drone in self.drone_names])
+        assert drone_quat.dtype == np.float32, "Drone quaternion must be of type float32"
+        if (t := time.perf_counter()) - self._last_drone_pos_update > 1 / self.POS_UPDATE_FREQ:
+            self.drone.extpos.send_extpose(*drone_pos[self.rank], *drone_quat[self.rank])
+            self._last_drone_pos_update = t
+
         if self.control_mode == "attitude":
             # Unlock thrust mode protection by sending a zero thrust command
             self.drone.commander.send_setpoint(0, 0, 0, 0)
+
+        self.drone.param.set_value("ring.effect", "13")  # Get LED memory and write to it
+        mem = self.drone.mem.get_mems(MemoryElement.TYPE_DRIVER_LED)
+        if len(mem) > 0:
+            r, g, b = (100, 0, 0) if self.rank == 0 else (0, 0, 100)
+            for i in range(len(mem[0].leds)):
+                mem[0].leds[i].set(r=r, g=g, b=b)
+            mem[0].write_data(None)
 
         return self.obs(), self.info()
 
@@ -288,12 +311,14 @@ class RealRaceCoreEnv:
         def connect_callback(_: str):
             event.set()
 
+        def failed_callback(_, msg: str):
+            logger.warning(f"Connection error: {msg}")
+            self._drone_healthy.clear()
+
         drone.fully_connected.add_callback(connect_callback)
         drone.disconnected.add_callback(lambda _: self._drone_healthy.clear())
-        drone.connection_failed.add_callback(
-            lambda _, msg: logger.warning(f"Connection failed: {msg}")
-        )
-        drone.connection_lost.add_callback(lambda _, msg: logger.warning(f"Connection lost: {msg}"))
+        drone.connection_failed.add_callback(failed_callback)
+        drone.connection_lost.add_callback(failed_callback)
         drone.open_link(uri)
 
         logger.info(f"Waiting for drone {drone_id} to connect...")
@@ -404,6 +429,7 @@ class RealRaceCoreEnv:
         case of errors, and close the connections to the ROSConnector.
         """
         try:
+            ...
             self._return_to_start()
         finally:  # Kill the drone
             try:

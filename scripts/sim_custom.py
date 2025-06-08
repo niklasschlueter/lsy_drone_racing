@@ -21,7 +21,11 @@ from gymnasium.wrappers.jax_to_numpy import JaxToNumpy
 import numpy as np
 
 from lsy_drone_racing.utils import load_config, load_controller
-from lsy_drone_racing.utils.utils import plot_mujoco_marker, render_trace, rotation_matrix_from_points
+from lsy_drone_racing.utils.utils import (
+    plot_mujoco_marker,
+    render_trace,
+    rotation_matrix_from_points,
+)
 
 if TYPE_CHECKING:
     from ml_collections import ConfigDict
@@ -110,8 +114,10 @@ def simulate(
                             traj_pos = ctrl_info["trajectory"]
                             print(f"shape traj pos: {np.shape(traj_pos)}")
                             print(f"traj_pos: {traj_pos}")
-                            traj_rot = rotation_matrix_from_points(traj_pos[:-1, ...], traj_pos[1:, ...])
-                        
+                            traj_rot = rotation_matrix_from_points(
+                                traj_pos[:-1, ...], traj_pos[1:, ...]
+                            )
+
                     if i > 1:
                         # Render the trajectory
                         if traj_pos is not None:
@@ -119,16 +125,23 @@ def simulate(
 
                         # Render the horizon
                         if len(ctrl_info["horizon"]) > 1:
-                            horiz_pos = ctrl_info["horizon"][: , :3]
+                            horiz_pos = ctrl_info["horizon"][:, :3]
                             print(f"horizon: {horiz_pos}")
-                            horiz_rot = rotation_matrix_from_points(horiz_pos[:-1, ...], horiz_pos[1:, ...])
-                            render_trace(env.unwrapped.sim.viewer, horiz_pos, horiz_rot, color=[0.0, 1.0, 0.0, 1.0])
+                            horiz_rot = rotation_matrix_from_points(
+                                horiz_pos[:-1, ...], horiz_pos[1:, ...]
+                            )
+                            render_trace(
+                                env.unwrapped.sim.viewer,
+                                horiz_pos,
+                                horiz_rot,
+                                color=[0.0, 1.0, 0.0, 1.0],
+                            )
                     env.render()
             i += 1
 
         controller.episode_callback()  # Update the controller internal state and models.
-        #X.append(np.array(x))
-        #U.append(np.array(u))
+        # X.append(np.array(x))
+        # U.append(np.array(u))
         log_episode_stats(obs, info, config, curr_time)
         controller.episode_reset()
         ep_times.append(curr_time if obs["target_gate"] == -1 else None)

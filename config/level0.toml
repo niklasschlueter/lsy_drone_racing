@@ -5,7 +5,7 @@
 # | `level0.toml`       | *No*                      | *No*                        | Perfect knowledge |
 [controller]
 #file = "attitude_mpc.py" # Put your controller file name here. Specifying a controller as argument to scripts will override this setting. Controllers are located in `lsy_drone_racing/control/`
-file = "/home/niklas/repos/master_thesis/inv_rl/clean_jax/inv_rl/attitude_mpc_wrapper.py"
+file = "attitude_controller_multi.py"
 
 [deploy]
 ### Settings only relevant for deployment

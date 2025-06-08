@@ -22,11 +22,12 @@ from scipy.spatial.transform import Rotation as R
 from lsy_drone_racing.control import Controller
 import jax
 from lsy_drone_racing.control.attitude_controller_custom import AttitudeController as AttCtrl
-#from mpcc.control.controller_single_wrapper import WrapperController as MPCC
+
+# from mpcc.control.controller_single_wrapper import WrapperController as MPCC
 from mpcc.control.controller_single import ControllerSingle as MPCC
 
 from inv_rl.attitude_mpc_wrapper import LearningController
-#.control.quadrotor.attitude_mpc import MPController
+# .control.quadrotor.attitude_mpc import MPController
 
 if TYPE_CHECKING:
     from numpy.typing import NDArray
@@ -57,13 +58,12 @@ class AttitudeController(Controller):
 
         self._finished = False
 
-        #info["id"] = 0
-        #self.controller_0 = AttCtrl(obs, info, config)
+        # info["id"] = 0
+        # self.controller_0 = AttCtrl(obs, info, config)
         info["id"] = 0
         self.controller_0 = LearningController(obs, info, config)
         info["id"] = 1
         self.controller_1 = MPCC(obs, info, config)
-
 
     def compute_control(
         self, obs: dict[str, NDArray[np.floating]], info: dict | None = None
@@ -98,18 +98,20 @@ class AttitudeController(Controller):
             True if the controller is finished, False otherwise.
         """
         self._tick += 1
-        ctrl_finished_0 = self.controller_0.step_callback(action, obs, reward, terminated, truncated, info)
-        ctrl_finished_1 = self.controller_1.step_callback(action, obs, reward, terminated, truncated, info)
-        #print(f"finished 0: {ctrl_finished_0}, finished 1: {ctrl_finished_1}")
+        ctrl_finished_0 = self.controller_0.step_callback(
+            action, obs, reward, terminated, truncated, info
+        )
+        ctrl_finished_1 = self.controller_1.step_callback(
+            action, obs, reward, terminated, truncated, info
+        )
         # Make sure this makes sense
-        #self._finished = ctrl_finished_0 & ctrl_finished_1
+        # self._finished = ctrl_finished_0 & ctrl_finished_1
         self._finished = ctrl_finished_0 | ctrl_finished_1
         return self._finished
 
     def episode_callback(self, **kwargs):
         """Reset the integral error."""
         self._tick = 0
-        print(f"Episode Callback")
         # This is the learning controller that is used to control the other drone
         X, U = self.controller_0.episode_callback()
         # This is the MPCC
@@ -117,8 +119,6 @@ class AttitudeController(Controller):
         return
 
     def episode_reset(self):
-        print(f"episode reset multi ctrl called")
         persistent_info_0 = self.controller_0.episode_reset()
         persistent_info_1 = self.controller_1.episode_reset()
         return (persistent_info_0, persistent_info_1)
-

@@ -26,7 +26,7 @@ if TYPE_CHECKING:
     from numpy.typing import NDArray
 
 
-class AttitudeController:
+class AttitudeController(Controller):
     """Example of a controller using the collective thrust and attitude interface."""
 
     def __init__(self, obs: dict[str, NDArray[np.floating]], info: dict, config: dict):
@@ -38,7 +38,7 @@ class AttitudeController:
             info: Additional environment information from the reset.
             config: The configuration of the environment.
         """
-        #super().__init__(obs, info, config)
+        # super().__init__(obs, info, config)
         self.freq = config.env.freq
         self.drone_mass = MASS
         self.kp = np.array([0.4, 0.4, 1.25])
@@ -46,7 +46,8 @@ class AttitudeController:
         self.kd = np.array([0.2, 0.2, 0.4])
         self.ki_range = np.array([2.0, 2.0, 0.4])
         self.i_error = np.zeros(3)
-        self.g = 9.81
+        # TODO: DELETE
+        self.g = 11.0  # 9.81
         self._tick = 0
 
         self._finished = False
@@ -57,29 +58,25 @@ class AttitudeController:
         waypoints = [obs["pos"][self._id]] + goals
         approx_path_length = np.sum(np.linalg.norm(np.diff(waypoints)))
 
-        planner_config = munch.Munch({"gate_vel_norm":0.15,
-                                      "spline_type": "linear",
-                                      "constant_offset": 10.0})
-        planner = PolynomialPlanner(obs, info,planner_config)
+        planner_config = munch.Munch(
+            {"gate_vel_norm": 0.15, "spline_type": "linear", "constant_offset": 10.0}
+        )
+        planner = PolynomialPlanner(obs, info, planner_config)
         pos, vel = planner.plan_simple_mujoco(
-            obs["pos"][self._id], 
+            obs["pos"][self._id],
             obs["gates_pos"][self._id],
             R.from_quat(obs["gates_quat"][self._id]).as_euler("xyz", degrees=False),
-            sample_points=approx_path_length / 0.3 * self.freq
+            sample_points=approx_path_length / 0.5 * self.freq,
         )
-        print(f"pos: {pos}")
 
         self.x_des = pos[0, :]
-        print(f"shape xde: {np.shape(self.x_des)}")
         self.y_des = pos[1, :]
         self.z_des = pos[2, :]
-        print(f"att controller instanciated with id {self._id}")
 
         self.ctrl_info = {}
         self.ctrl_info["trajectory"] = pos.T
         self.ctrl_info["horizon"] = np.array([])
         self.ctrl_info["opp_prediction"] = np.array([])
-
 
     def compute_control(
         self, obs: dict[str, NDArray[np.floating]], info: dict | None = None
@@ -158,8 +155,6 @@ class AttitudeController:
         """Reset the integral error."""
         self.i_error[:] = 0
         self._tick = 0
-        print(f"Episode Callback AttitudeController.")
-    
+
     def episode_reset(self):
         return {}
-

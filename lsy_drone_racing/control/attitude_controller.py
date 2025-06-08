@@ -89,7 +89,6 @@ class AttitudeController(Controller):
         Returns:
             The collective thrust and orientation [t_des, r_des, p_des, y_des] as a numpy array.
         """
-        print(f"obs: {obs}")
         i = min(self._tick, len(self.x_des) - 1)
         if i == len(self.x_des) - 1:  # Maximum duration reached
             self._finished = True

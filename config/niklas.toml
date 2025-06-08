@@ -8,7 +8,7 @@
 #file = "/home/niklas/repos/master_thesis/inv_rl/clean_jax/inv_rl/control/quadrotor/attitude_mpc.py"
 #file = "/home/niklas/repos/master_thesis/mpcc/mpcc/control/controller_single_wrapper.py"
 #file = "/home/niklas/repos/master_thesis/inv_rl/clean_jax/inv_rl/attitude_mpc_wrapper.py"
-file = "/home/niklas/repos/master_thesis/inv_rl/clean_jax/inv_rl/attitude_mpc_wrapper.py"
+file = "/home/adr/repos/corl/master_thesis/inv_rl/clean_jax/inv_rl/attitude_mpc_wrapper.py"
 
 
 [deploy]
