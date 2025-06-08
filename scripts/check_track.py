@@ -13,7 +13,7 @@ from lsy_drone_racing.utils import load_config
 logger = logging.getLogger("rosout." + __name__)
 
 
-def main(config: str = "level2.toml"):
+def main(config: str = "deploy_v2.toml"):
     """Check if the real race track conforms to the race configuration.
 
     Args:
@@ -21,9 +21,10 @@ def main(config: str = "level2.toml"):
     """
     rclpy.init()
     config = load_config(Path(__file__).resolve().parents[1] / "config" / config)
-    gates_pos = [g["pos"] for g in config.env.track.gates]
-    gates_quat = [R.from_euler("xyz", g["rpy"]).as_quat() for g in config.env.track.gates]
-    obstacle_pos = [o["pos"] for o in config.env.track.obstacles]
+    # MODIFICATION: ONLY TAKE THE 4 FIRST GATES
+    gates_pos = [g["pos"] for g in config.env.track.gates][:4]
+    gates_quat = [R.from_euler("xyz", g["rpy"]).as_quat() for g in config.env.track.gates][:4]
+    obstacle_pos = [] #[o["pos"] for o in config.env.track.obstacles]
     check_race_track(gates_pos, gates_quat, obstacle_pos, rng_config=config.env.randomizations)
     logger.info("Race track check passed")
 

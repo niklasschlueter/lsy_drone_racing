@@ -68,10 +68,10 @@ control_mode = "attitude"
 pos = [0.0, 1.0, 0.56]
 rpy = [0.0, 0.0, 1.57]
 [[env.track.gates]]
-pos = [-1.5, -0.0, 0.56]
+pos = [-1.5, -0.0, 1.11]
 rpy = [0.0, 0.0, 1.57]
 [[env.track.gates]]
-pos = [-1.0, 1.0, 1.11]
+pos = [-1.0, 1.0, 0.56]
 rpy = [0.0, 0.0, -1.57]
 [[env.track.gates]]
 #pos = [1.0, -1.0, 1.11]
@@ -92,13 +92,13 @@ rpy = [0.0, 0.0, -1.57]
 
 # 2
 [[env.track.gates]]
-pos = [-1.0, 1.0, 1.11]
+pos = [-1.0, 1.0, 0.56]
 rpy = [0.0, 0.0, 1.57]
 
 #3 
 [[env.track.gates]]
 #pos = [-1.0, -1.0, 0.56]
-pos = [-1.5, -0.0, 0.56]
+pos = [-1.5, -0.0, 1.11]
 rpy = [0.0, 0.0, -1.57]
 
 
@@ -163,8 +163,8 @@ maxval = [0.000001, 0.000001, 0.000001]
 [env.randomizations.gate_pos]
 fn = "uniform"
 [env.randomizations.gate_pos.kwargs]
-minval = [-0.15, -0.15, -0.1]
-maxval = [0.15, 0.15, 0.1]
+minval = [-0.05, -0.05, -0.1]
+maxval = [0.05, 0.05, 0.1]
 
 [env.randomizations.gate_rpy]
 fn = "uniform"
