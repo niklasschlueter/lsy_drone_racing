@@ -62,6 +62,9 @@ def control_loop(rank: int, config: ConfigDict, start_barrier: Barrier):
         obs, info = env.reset(options=options)
         info["id"] = rank
         info["n_run"] = 0 # TODO: Use this 
+
+        persistent_info = ({}, {}) # TODO: Use this
+        info["persistent"] = persistent_info
         # TODO: Specify log path more clearly
         info["log_path"] = Path(__file__).parents[1] / "saves/deploy"/ f"run{info['n_run']:03d}.csv"
         next_obs = obs  # Set next_obs to avoid errors when the loop never enters
@@ -104,7 +107,7 @@ def control_loop(rank: int, config: ConfigDict, start_barrier: Barrier):
         env.close()
 
 
-def main(config: str = "deploy.toml"):
+def main(config: str = "deploy_v2.toml"):
     """Deployment script to run the controller on the real drone.
 
     Args:

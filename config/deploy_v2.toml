@@ -6,7 +6,8 @@
 [[controller]]
 file = "/home/niklas/repos/master_thesis/mpcc/mpcc/control/controller_single.py" # Put your controller file name here. Specifying a controller as argument to scripts will override this setting. Controllers are located in `lsy_drone_racing/control/`
 [[controller]]  # Add the controller files for each drone
-file = "attitude_controller_custom.py"
+#file = "attitude_controller_custom.py"
+file ="/home/niklas/repos/master_thesis/inv_rl/clean_jax/inv_rl/attitude_mpc_wrapper.py"
 
 [deploy]
 ### Settings only relevant for deployment
