@@ -358,7 +358,7 @@ class RealRaceCoreEnv:
         self.drone.platform.send_arming_request(True)
         # Fly back to the start position
         RETURN_HEIGHT = 1.75  # m
-        BREAKING_DISTANCE = 1.0  # m
+        BREAKING_DISTANCE = 1.5  # m
         BREAKING_DURATION = 3.0  # s
         RETURN_DURATION = 7.0  # s
         LAND_DURATION = 3.0  # s

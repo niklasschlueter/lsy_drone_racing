@@ -8,15 +8,28 @@ import pandas as pd
 import sys
 
 import matplotlib
-matplotlib.use('TkAgg')
+#matplotlib.use('TkAgg')
 from matplotlib import pyplot as plt
+import scienceplots
+
+import matplotlib.ticker as ticker
+
+plt.style.use(['science','ieee'])        
+
 plt.rcParams.update({
-    "text.usetex": True,
-    "font.family": "Times New Roman",
-    "font.size": 12,
-    "pgf.texsystem": "pdflatex",
-    "axes.grid": True
+    #"text.usetex": True,
+    #"font.family": "Times New Roman",
+    #"font.size": 12,
+    #"pgf.texsystem": "pdflatex",
+    "axes.grid": True,
+    "figure.figsize": (7.16, 4.5),
+    "figure.dpi": 400,
 })
+
+#plt.rcParams['figure.figsize'] = (7.16, 4.5)  # for double-column plot
+#plt.rcParams['figure.dpi'] = 300
+#plt.style.use('science')        
+#def_fig_size = (7.16,4.5)
 #plt.rcParams['axes.grid'] = True
 
 
@@ -45,7 +58,7 @@ class Plotter:
         self.colors = ["b", "g", "r", "c", "m", "y"]
 
     def save_fig(self, fig, plot_name):
-        plot_name = plot_name + ".png"
+        plot_name = plot_name + ".pdf"
         file_path = self.save_path / plot_name
 
         # make sure directories exits
@@ -58,7 +71,9 @@ class Plotter:
         # Read the data from the csv file
         df = pd.read_csv(self.file_path)
 
-        fig = plt.figure(figsize=(16, 9))
+        
+        #fig = plt.figure(figsize=(16, 9))
+        fig = plt.figure()
         ## X-Y Plane
         ax = fig.add_subplot(2, 2, 1)
         ax.set_title("XY")
@@ -324,42 +339,26 @@ class Plotter:
             z = center[2] + local_corners[:, 1]
             return x, y, z
 
-        def plot_square_xy(ax, center, yaw):
-            corners = get_square_corners(center, yaw)
-            ax.plot(corners[:, 0], corners[:, 1], 'k-')
-
-        def plot_square_xz(ax, center, yaw):
-            corners_xy = get_square_corners(center, yaw)
-            ax.plot(corners_xy[:, 0], [center[2]] * len(corners_xy), 'k-')
-
-        def plot_square_yz(ax, center, yaw):
-            corners_xy = get_square_corners(center, yaw)
-            ax.plot(corners_xy[:, 1], [center[2]] * len(corners_xy), 'k-')
-
-        def plot_square_3d(ax, center, yaw):
-            corners = get_square_corners(center, yaw)
-            z = center[2]
-            ax.plot3D(corners[:, 0], corners[:, 1], [z]*len(corners), 'k-')
-
         def plot_gate_xy(ax, center, yaw):
             x, y, _ = get_vertical_square(center, yaw)
-            ax.plot(x, y, 'k-')
+            ax.plot(x, y, 'k-', linewidth=2)
 
         def plot_gate_xz(ax, center, yaw):
             x, _, z = get_vertical_square(center, yaw)
-            ax.plot(x, z, 'k-')
+            ax.plot(x, z, 'k-', linewidth=2)
 
         def plot_gate_yz(ax, center, yaw):
             _, y, z = get_vertical_square(center, yaw)
-            ax.plot(y, z, 'k-')
-
+            ax.plot(y, z, 'k-', linewidth=2)
 
         def plot_gate_3d(ax, center, yaw):
             x, y, z = get_vertical_square(center, yaw)
-            ax.plot3D(x, y, z, 'k-')
+            ax.plot3D(x, y, z, 'k-')#, linewidth=2)
 
 
-        fig = plt.figure(figsize=(16, 9))
+        #fig = plt.figure(figsize=(16, 9))
+        fig = plt.figure()
+        fig.subplots_adjust(hspace=0.4)
 
         ## XY Plane
         ax = fig.add_subplot(2, 2, 1)
@@ -370,11 +369,12 @@ class Plotter:
         ax.plot(
             df.iloc[:, DataVarIndex.DES_POS_X.value],
             df.iloc[:, DataVarIndex.DES_POS_Y.value],
-            "--", label="des"
+            "--", label="ref"
         )
         ax.plot(
             df.iloc[:, DataVarIndex.POS_X.value],
             df.iloc[:, DataVarIndex.POS_Y.value],
+            ":",
             label="meas"
         )
         for pos, yaw in zip(gate_positions, gate_yaws):
@@ -390,12 +390,13 @@ class Plotter:
         ax.plot(
             df.iloc[:, DataVarIndex.DES_POS_X.value],
             df.iloc[:, DataVarIndex.DES_POS_Z.value],
-            "--", label="des"
+            "--", #label="des"
         )
         ax.plot(
             df.iloc[:, DataVarIndex.POS_X.value],
             df.iloc[:, DataVarIndex.POS_Z.value],
-            label="meas"
+            ":",
+            #label="meas"
         )
         for pos, yaw in zip(gate_positions, gate_yaws):
             plot_gate_xz(ax, pos, yaw)
@@ -410,12 +411,13 @@ class Plotter:
         ax.plot(
             df.iloc[:, DataVarIndex.DES_POS_Y.value],
             df.iloc[:, DataVarIndex.DES_POS_Z.value],
-            "--", label="des"
+            "--", #label="des"
         )
         ax.plot(
             df.iloc[:, DataVarIndex.POS_Y.value],
             df.iloc[:, DataVarIndex.POS_Z.value],
-            label="meas"
+            ":",
+            #label="meas"
         )
         for pos, yaw in zip(gate_positions, gate_yaws):
             plot_gate_yz(ax, pos, yaw)
@@ -423,7 +425,7 @@ class Plotter:
 
         ## 3D Plot
         ax = fig.add_subplot(2, 2, 4, projection="3d")
-        ax.set_title("3d Trajectory")
+        ax.set_title("3D")
         ax.set_xlabel("X [m]")
         ax.set_ylabel("Y [m]")
         ax.set_zlabel("Z [m]")
@@ -431,29 +433,39 @@ class Plotter:
             df.iloc[:, DataVarIndex.DES_POS_X.value],
             df.iloc[:, DataVarIndex.DES_POS_Y.value],
             df.iloc[:, DataVarIndex.DES_POS_Z.value],
-            "--", label="des"
+            "--", #label="des"
         )
         ax.plot(
             df.iloc[:, DataVarIndex.POS_X.value],
             df.iloc[:, DataVarIndex.POS_Y.value],
             df.iloc[:, DataVarIndex.POS_Z.value],
-            label="meas"
+            ":",
+            #label="meas"
         )
         for pos, yaw in zip(gate_positions, gate_yaws):
             plot_gate_3d(ax, pos, yaw)
 
         set_axes_equal(ax)
-        ax.legend()
+        #ax.legend()
+
+        
+        #ax.set_xlim(x_min, x_max)
+        #ax.set_ylim(y_min, y_max)
+        #ax.set_zlim(0, 2.0)
+        
+        #ax.set_box_aspect([1, 1, 1])  # maintain equal scaling
+        #ax.view_init(elev=45, azim=-60)  # Better angle
+
 
         return fig
-
 
 
     def plot_velocity(self):
         # Read the data from the csv file
         df = pd.read_csv(self.file_path)
 
-        fig = plt.figure(figsize=(16, 9))
+        #fig = plt.figure(figsize=(16, 9))
+        fig = plt.figure()
 
         ax = fig.add_subplot(2, 1, 1)
         ax.set_title("Velocity in each axis")
@@ -518,42 +530,53 @@ class Plotter:
         # Read the data from the csv file
         df = pd.read_csv(self.file_path)
 
-        fig = plt.figure(figsize=(16, 9))
+        #fig = plt.figure(figsize=(16, 9))
+        #fig = plt.figure()
+
+        fig, axs = plt.subplots(2, 1, sharex=True, figsize=(7.16, 4))  # IEEE width, good height
+        fig.subplots_adjust(hspace=0.3)  # spacing between plots
+    
+        formatter = ticker.FormatStrFormatter("%.2f")  # 2 digits after decimal
 
         ## rpy
-        ax = fig.add_subplot(2, 1, 1)
+        ax = axs[0]
+        #ax = fig.add_subplot(2, 1, 1)
         ax.set_title("Angles (RPY)")
-        ax.set_xlabel(r"$t$ [s]")
-        ax.set_ylabel(r"Angle [rad]")
+        #ax.set_xlabel(r"$t$ [s]")
+        ax.set_ylabel(r"$\boldsymbol{\phi}$ [rad]")
+        ax.yaxis.set_major_formatter(formatter)
 
         timesteps = df.iloc[:, DataVarIndex.VEL_X.TIME]
 
-        ax.plot(timesteps, df.iloc[:, DataVarIndex.ROLL.value], "-", label=r"roll")
-        ax.plot(timesteps, df.iloc[:, DataVarIndex.PITCH.value], "-", label=r"pitch")
-        ax.plot(timesteps, df.iloc[:, DataVarIndex.YAW.value], "-", label=r"yaw")
+        ax.plot(timesteps, df.iloc[:, DataVarIndex.ROLL.value], label=r"$\phi$")
+        ax.plot(timesteps, df.iloc[:, DataVarIndex.PITCH.value], label=r"$\theta$")
+        ax.plot(timesteps, df.iloc[:, DataVarIndex.YAW.value], label=r"$\psi$")
 
-        ax.legend()
+        ax.legend(loc="upper left")
 
         ## rpy rate
-        ax = fig.add_subplot(2, 1, 2)
-        ax.set_title("Angle Rates (RPY)")
+        #ax = fig.add_subplot(2, 1, 2)
+        ax = axs[1]
+        #ax.set_title("Angle Rates (RPY)")
         ax.set_xlabel(r"$t$ [s]")
-        ax.set_ylabel(r"Angle Rate [rad/s]")
+        ax.set_ylabel(r"$\dot{\boldsymbol{\phi}}$ [rad/s]")
+        ax.yaxis.set_major_formatter(formatter)
 
         ax.plot(
-            timesteps, df.iloc[:, DataVarIndex.ROLL_RATE.value], "-", label=r"roll rate"
+            timesteps, df.iloc[:, DataVarIndex.ROLL_RATE.value],
+            label=r"$\dot{\phi}$",
         )
         ax.plot(
             timesteps,
             df.iloc[:, DataVarIndex.PITCH_RATE.value],
-            "-",
-            label=r"pitch rate",
+            label=r"$\dot{\theta}$",
         )
         ax.plot(
-            timesteps, df.iloc[:, DataVarIndex.YAW_RATE.value], "-", label=r"yaw rate"
+            timesteps, df.iloc[:, DataVarIndex.YAW_RATE.value], 
+            label=r"$\dot{\psi}$",
         )
 
-        ax.legend()
+        ax.legend(loc="lower right")
 
         return fig
 
@@ -561,7 +584,9 @@ class Plotter:
         # Read the data from the csv file
         df = pd.read_csv(self.file_path)
 
-        fig = plt.figure(figsize=(16, 9))
+        #fig = plt.figure(figsize=(16, 9))
+        fig = plt.figure()
+
 
         ## rpy
         ax = fig.add_subplot(2, 1, 1)
@@ -597,7 +622,7 @@ class Plotter:
         # Read the data from the csv file
         df = pd.read_csv(self.file_path)
 
-        fig = plt.figure(figsize=(16, 9))
+        fig = plt.figure()
 
         ## rpy
         ax = fig.add_subplot(3, 1, 1)
@@ -645,7 +670,7 @@ class Plotter:
         # Read the data from the csv file
         df = pd.read_csv(self.file_path)
 
-        fig = plt.figure(figsize=(16, 9))
+        fig = plt.figure()
 
         ## rpy
         ax = fig.add_subplot(3, 1, 1)
@@ -714,73 +739,89 @@ class Plotter:
         # Read the data from the csv file
         df = pd.read_csv(self.file_path)
 
+        formatter = ticker.FormatStrFormatter("%.2f")  # 2 digits after decimal
+
         # check if attitude interface was actually used
         if df.iloc[1, DataVarIndex.CTRL_MODE] != "ATTITUDE":
             print(f"Skipping Attitude input plot, no attitude interface used.")
             return None
 
-        fig = plt.figure(figsize=(16, 9))
+        fig, axs = plt.subplots(2, 1, sharex=True, figsize=(7.16, 3))
+        fig.subplots_adjust(hspace=0.3)  # spacing between plots
 
-        ax = fig.add_subplot(2, 1, 1)
-        ax.set_title("Total Thrust Input")
+        
+        #ax = fig.add_subplot(2, 1, 1)
+        ax = axs[0]
+        #ax.set_title("Control inputs generated by the MPC during the race")
         ax.set_xlabel(r"$t$ [s]")
-        ax.set_ylabel(r"$total thrust$ [N]")
+        ax.set_ylabel(r"$f_{T, cmd}$ [N]")
+        ax.yaxis.set_major_formatter(formatter)
 
         timesteps = df.iloc[:, DataVarIndex.VEL_X.TIME]
 
         ax.plot(
-            timesteps, df.iloc[:, DataVarIndex.DES_THRUST], "-", label=r"$thrust_{des}$"
+            timesteps, df.iloc[:, DataVarIndex.DES_THRUST], "-", #label=r"$f_{T, cmd}$"
         )
-        ax.legend()
+        #ax.legend()
 
-        ax = fig.add_subplot(2, 1, 2)
-        ax.set_title("Angle Input")
+        #ax = fig.add_subplot(2, 1, 2)
+        ax = axs[1]
+        #ax.set_title("Angle Commands")
         ax.set_xlabel(r"$t$ [s]")
-        ax.set_ylabel(r"$angle$ [rad]")
+        ax.set_ylabel(r"$\boldsymbol{\phi}_{cmd}$ [rad]")
+        ax.yaxis.set_major_formatter(formatter)
 
         ax.plot(
             timesteps,
             df.iloc[:, DataVarIndex.DES_ROLL.value],
-            "-",
-            label=r"$roll_{des}$",
+            #"-",
+            label=r"$\phi_{cmd}$", #[rad]",
         )
         ax.plot(
             timesteps,
             df.iloc[:, DataVarIndex.DES_PITCH.value],
-            "-",
-            label=r"$pitch_{des}$",
+            #"-",
+            label=r"$\theta_{cmd}$",# [rad]",
         )
-        ax.plot(
-            timesteps, df.iloc[:, DataVarIndex.DES_YAW.value], "-", label=r"$yaw_{des}$"
-        )
+        #ax.plot(
+        #    timesteps, df.iloc[:, DataVarIndex.DES_YAW.value], "-", #label=r"$yaw_{des}$"
+        #)
 
         ax.legend()
 
         return fig
 
-    def plot_theta_v_theta(self):
+    def plot_s_v_s(self):
         # Read the data from the csv file
         df = pd.read_csv(self.file_path)
 
-        fig = plt.figure(figsize=(16, 9))
+        formatter = ticker.FormatStrFormatter("%.2f")  # 2 digits after decimal
 
-        ax = fig.add_subplot(2, 1, 1)
-        ax.set_title("Theta")
-        ax.set_xlabel(r"$t$ [s]")
-        ax.set_ylabel(r"$Progress Theta$ [m]")
+        fig, axs = plt.subplots(2, 1, sharex=True, figsize=(7.16, 3))
+        fig.subplots_adjust(hspace=0.3)  # spacing between plots
+
+        #fig = plt.figure()
+
+        #ax = fig.add_subplot(2, 1, 1)
+        ax = axs[0]
+        ax.set_title("Path Progress")
+        
+        #ax.set_xlabel(r"$t$ [s]")
+        ax.set_ylabel(r"$s$ [m]")
+        ax.yaxis.set_major_formatter(formatter)
 
         timesteps = df.iloc[:, DataVarIndex.VEL_X.TIME]
 
-        ax.plot(timesteps, df.iloc[:, DataVarIndex.THETA], "-", label=r"$theta$")
-        ax.legend()
+        ax.plot(timesteps, df.iloc[:, DataVarIndex.THETA])#, "-", label=r"$theta$")
+        #ax.legend()
 
-        ax = fig.add_subplot(2, 1, 2)
-        ax.set_title("v_theta")
+        ax = axs[1]
         ax.set_xlabel(r"$t$ [s]")
-        ax.set_ylabel(r"$v_{theta}$ [m/s]")
+        ax.set_ylabel(r"$v_{s}$ [m/s]")
+        ax.yaxis.set_major_formatter(formatter)
 
-        ax.plot(timesteps, df.iloc[:, DataVarIndex.V_THETA], "-", label=r"$v_{theta}$")
-        ax.legend()
+        ax.plot(timesteps, df.iloc[:, DataVarIndex.V_THETA])#, "-", label=r"$v_{s}$")
+        #ax.legend()
 
         return fig
 
@@ -788,7 +829,7 @@ class Plotter:
         # Read the data from the csv file
         df = pd.read_csv(self.file_path)
 
-        fig = plt.figure(figsize=(16, 9))
+        fig = plt.figure()
 
         ax = fig.add_subplot(1, 1, 1, projection="3d")
         ax.set_title("Opponent 3d Trajectory")
@@ -834,7 +875,7 @@ class Plotter:
         # Read the data from the csv file
         df = pd.read_csv(self.file_path)
 
-        fig = plt.figure(figsize=(16, 9))
+        fig = plt.figure()
 
         ax = fig.add_subplot(1, 1, 1)
         ax.set_title("Opponent XY Trajectory")
@@ -880,7 +921,7 @@ class Plotter:
         # Read the data from the csv file
         df = pd.read_csv(self.file_path)
 
-        fig = plt.figure(figsize=(16, 9))
+        fig = plt.figure()
 
         ax = fig.add_subplot(1, 1, 1)
         ax.set_title("Opponent XZ Trajectory")
@@ -926,7 +967,7 @@ class Plotter:
         # Read the data from the csv file
         df = pd.read_csv(self.file_path)
 
-        fig = plt.figure(figsize=(16, 9))
+        fig = plt.figure()
 
         ax = fig.add_subplot(1, 1, 1)
         ax.set_title("Opponent YZ Trajectory")
@@ -973,7 +1014,7 @@ class Plotter:
         # Read the data from the csv file
         df = pd.read_csv(self.file_path)
 
-        fig = plt.figure(figsize=(16, 9))
+        fig = plt.figure()
 
         ax = fig.add_subplot(1, 1, 1)
         ax.set_title("Opponent Velocity XY Trajectory")
@@ -1015,7 +1056,7 @@ class Plotter:
         # Read the data from the csv file
         df = pd.read_csv(self.file_path)
 
-        fig = plt.figure(figsize=(16, 9))
+        fig = plt.figure()
 
         ax = fig.add_subplot(1, 1, 1)
         ax.set_title("Opponent Velocity XZ Trajectory")
@@ -1061,7 +1102,7 @@ class Plotter:
         # Read the data from the csv file
         df = pd.read_csv(self.file_path)
 
-        fig = plt.figure(figsize=(16, 9))
+        fig = plt.figure()
 
         ax = fig.add_subplot(1, 1, 1)
         ax.set_title("Opponent Velocity YZ Trajectory")
@@ -1107,7 +1148,7 @@ class Plotter:
         # Read the data from the csv file
         df = pd.read_csv(self.file_path)
 
-        fig = plt.figure(figsize=(16, 9))
+        fig = plt.figure()
 
         ax = fig.add_subplot(1, 1, 1, projection="3d")
         ax.set_title("Opponent 3d Vel Trajectory")
@@ -1154,43 +1195,42 @@ class Plotter:
         # Read the data from the csv file
         df = pd.read_csv(self.file_path)
 
-        fig = plt.figure(figsize=(16, 9))
+        fig, axs = plt.subplots(2, 1, sharex=True, figsize=(7.16, 3))  # IEEE width, good height
+        fig.subplots_adjust(hspace=0.3)  # spacing between plots
+    
+        formatter = ticker.FormatStrFormatter("%.2f")  # 2 digits after decimal
 
-        ax = fig.add_subplot(2, 1, 1)
-        ax.set_title("f_collective_internal_integrated")
-        ax.set_xlabel(r"$t$ [s]")
-        ax.set_ylabel(r"$f_collective_internal_integrated$ [m]")
+        ax = axs[0]
+        #ax.set_title("f_collective_internal_integrated")
+        #ax.set_xlabel(r"$t$ [s]")
+        ax.set_ylabel(r"${f}_{T}$")
+        axs[0].yaxis.set_major_formatter(formatter)
 
         timesteps = df.iloc[:, DataVarIndex.VEL_X.TIME]
 
         ax.plot(
             timesteps,
             df.iloc[:, DataVarIndex.F_COLLECTIVE],
-            "-",
-            label=r"$integrated collective thrust$",
+            #label=r"$integrated collective thrust$",
         )
-        ax.legend()
 
-        ax = fig.add_subplot(2, 1, 2)
-        ax.set_title("v_theta")
+        ax = axs[1]
+        #ax.set_title("v_theta")
         ax.set_xlabel(r"$t$ [s]")
-        ax.set_ylabel("delta_f_collective_cmd")
+        ax.set_ylabel(r"$f_{T, cmd}$")
+        axs[0].yaxis.set_major_formatter(formatter)
 
         ax.plot(
             timesteps,
-            df.iloc[:, DataVarIndex.DELTA_F_COLLECTIVE_CMD],
-            "-",
-            label="delta_f_collective_cmd",
+            df.iloc[:, DataVarIndex.DES_THRUST],
         )
-        ax.legend()
-
         return fig
 
     def plot_status(self):
         # Read the data from the csv file
         df = pd.read_csv(self.file_path)
 
-        fig = plt.figure(figsize=(16, 9))
+        fig = plt.figure()
 
         ax = fig.add_subplot(1, 1, 1)
         ax.set_title("Solver Status")
@@ -1208,120 +1248,139 @@ class Plotter:
         # Read the data from the csv file
         df = pd.read_csv(self.file_path)
 
-        fig = plt.figure(figsize=(16, 9))
+        fig = plt.figure()
 
-        ax = fig.add_subplot(2, 1, 1)
+        ax = fig.add_subplot(1, 1, 1)
         ax.set_title("Computation Time")
         ax.set_xlabel(r"$t$ [s]")
-        ax.set_ylabel(r"$Computation Time [s]$")
+        ax.set_ylabel(r"Computation Time [ms]")
 
         timesteps = df.iloc[:, DataVarIndex.VEL_X.TIME]
 
         ax.scatter(
             timesteps,
-            df.iloc[:, DataVarIndex.COMPUTE_TIME],
+            df.iloc[:, DataVarIndex.COMPUTE_TIME]*1_000.0,
             # "-",
+            alpha=0.2,
             label=r"$Comp. Time$",
         )
-        ax.legend()
+        #ax.legend()
 
-        ax = fig.add_subplot(2, 1, 2)
-        ax.set_title("Computation Time")
-        ax.set_xlabel(r"$t$ [s]")
-        ax.set_ylabel(r"$Computation Time [s]$")
-        ax.set_ylim(0, 0.03)
+        #ax = fig.add_subplot(2, 1, 2)
+        #ax.set_title("Computation Time")
+        #ax.set_xlabel(r"$t$ [s]")
+        #ax.set_ylabel(r"$Computation Time [s]$")
+        #ax.set_ylim(0, 0.03)
 
-        timesteps = df.iloc[:, DataVarIndex.VEL_X.TIME]
+        #timesteps = df.iloc[:, DataVarIndex.VEL_X.TIME]
 
-        ax.scatter(
-            timesteps,
-            df.iloc[:, DataVarIndex.COMPUTE_TIME],
-            # "-",
-            label=r"$Comp. Time$",
-        )
-        ax.legend()
+        #ax.scatter(
+        #    timesteps,
+        #    df.iloc[:, DataVarIndex.COMPUTE_TIME],
+        #    # "-",
+        #    label=r"$Comp. Time$",
+        #)
+        #ax.legend()
 
         return fig
+
+    #def plot_internal_mpc_inputs(self):
+    #    # Read the data from the csv file
+    #    df = pd.read_csv(self.file_path)
+
+    #    fig = plt.figure()
+
+    #    ax = fig.add_subplot(4, 1, 1)
+    #    #ax.set_title("Control Input Derivatives Computed by the MPC Over the Race Duration")
+    #    ax.set_xlabel(r"$t$ [s]")
+    #    ax.set_ylabel(r"$\dot{f}_{cmd}$ [N/s]")
+
+    #    timesteps = df.iloc[:, DataVarIndex.VEL_X.TIME]
+
+    #    ax.plot(
+    #        timesteps,
+    #        df.iloc[:, DataVarIndex.DELTA_F_COLLECTIVE_CMD],
+    #        "-",
+    #    )
+
+    #    ax = fig.add_subplot(4, 1, 2)
+    #    ax.set_xlabel(r"$t$ [s]")
+    #    ax.set_ylabel(r"$\dot{\phi}_{cmd}$ [r/s]")
+
+    #    ax.plot(
+    #        timesteps,
+    #        df.iloc[:, DataVarIndex.DELTA_R_CMD],
+    #        "-",
+    #    )
+
+    #    ax = fig.add_subplot(4, 1, 3)
+    #    ax.set_xlabel(r"$t$ [s]")
+    #    ax.set_ylabel(r"$\dot{\theta}_{cmd}$ [r/s]")
+
+    #    ax.plot(
+    #        timesteps,
+    #        df.iloc[:, DataVarIndex.DELTA_P_CMD],
+    #        "-",
+    #    )
+
+    #    #ax = fig.add_subplot(5, 1, 4)
+    #    #ax.set_title("Delta Yaw Cmd")
+    #    #ax.set_xlabel(r"$t$ [s]")
+    #    #ax.set_ylabel(r"$Delta Yaw Cmd [r/s]$")
+
+    #    #ax.plot(
+    #    #    timesteps,
+    #    #    df.iloc[:, DataVarIndex.DELTA_Y_CMD],
+    #    #    "-",
+    #    #    label=r"$Delta Yaw cmd$",
+    #    #)
+
+    #    ax = fig.add_subplot(4, 1, 4)
+    #    ax.set_xlabel(r"$t$ [s]")
+    #    ax.set_ylabel(r"$\dot{v}_{\theta}$ [m/s$^2$]")
+
+
+    #    ax.plot(
+    #        timesteps,
+    #        df.iloc[:, DataVarIndex.DELTA_V_THETA],
+    #        "-",
+    #    )
+
+    #    return fig
 
     def plot_internal_mpc_inputs(self):
-        # Read the data from the csv file
+        import matplotlib.pyplot as plt
+    
         df = pd.read_csv(self.file_path)
-
-        fig = plt.figure(figsize=(16, 9))
-
-        ax = fig.add_subplot(5, 1, 1)
-        ax.set_title("Delta f collective")
-        ax.set_xlabel(r"$t$ [s]")
-        ax.set_ylabel(r"$delta f collective [N/s]$")
-
+    
         timesteps = df.iloc[:, DataVarIndex.VEL_X.TIME]
-
-        ax.plot(
-            timesteps,
-            df.iloc[:, DataVarIndex.DELTA_F_COLLECTIVE_CMD],
-            "-",
-            label=r"$Delta F collective cmd$",
-        )
-        ax.legend()
-        ax.grid(True)
-
-        ax = fig.add_subplot(5, 1, 2)
-        ax.set_title("Delta Roll Cmd")
-        ax.set_xlabel(r"$t$ [s]")
-        ax.set_ylabel(r"$Delta Roll Cmd [r/s]$")
-
-        ax.plot(
-            timesteps,
-            df.iloc[:, DataVarIndex.DELTA_R_CMD],
-            "-",
-            label=r"$Delta Roll cmd$",
-        )
-        ax.legend()
-        ax.grid(True)
-
-        ax = fig.add_subplot(5, 1, 3)
-        ax.set_title("Delta Pitch Cmd")
-        ax.set_xlabel(r"$t$ [s]")
-        ax.set_ylabel(r"$Delta Pitch Cmd [r/s]$")
-
-        ax.plot(
-            timesteps,
-            df.iloc[:, DataVarIndex.DELTA_P_CMD],
-            "-",
-            label=r"$Delta Pitch cmd$",
-        )
-        ax.legend()
-        ax.grid(True)
-
-        ax = fig.add_subplot(5, 1, 4)
-        ax.set_title("Delta Yaw Cmd")
-        ax.set_xlabel(r"$t$ [s]")
-        ax.set_ylabel(r"$Delta Yaw Cmd [r/s]$")
-
-        ax.plot(
-            timesteps,
-            df.iloc[:, DataVarIndex.DELTA_Y_CMD],
-            "-",
-            label=r"$Delta Yaw cmd$",
-        )
-        ax.legend()
-        ax.grid(True)
-
-        ax = fig.add_subplot(5, 1, 5)
-        ax.set_title("Delta V theta")
-        ax.set_xlabel(r"$t$ [s]")
-        ax.set_ylabel(r"$Delta v_{theta} [m/s^2]$")
-
-        ax.plot(
-            timesteps,
-            df.iloc[:, DataVarIndex.DELTA_V_THETA],
-            "-",
-            label=r"$Delta V theta$",
-        )
-        ax.legend()
-        ax.grid(True)
-
+    
+        fig, axs = plt.subplots(4, 1, sharex=True, figsize=(7.16, 6))  # IEEE width, good height
+        fig.subplots_adjust(hspace=0.3)  # spacing between plots
+    
+        formatter = ticker.FormatStrFormatter("%.2f")  # 2 digits after decimal
+    
+        axs[0].set_title("Control input derivatives computed by the MPC over the race duration")
+    
+        axs[0].set_ylabel(r"$\dot{f}_{cmd}$ [N/s]")
+        axs[0].yaxis.set_major_formatter(formatter)
+        axs[0].plot(timesteps, df.iloc[:, DataVarIndex.DELTA_F_COLLECTIVE_CMD], "-")
+    
+        axs[1].set_ylabel(r"$\dot{\phi}_{cmd}$ [rad/s]")
+        axs[1].yaxis.set_major_formatter(formatter)
+        axs[1].plot(timesteps, df.iloc[:, DataVarIndex.DELTA_R_CMD], "-")
+    
+        axs[2].set_ylabel(r"$\dot{\theta}_{cmd}$ [rad/s]")
+        axs[2].yaxis.set_major_formatter(formatter)
+        axs[2].plot(timesteps, df.iloc[:, DataVarIndex.DELTA_P_CMD], "-")
+    
+        axs[3].set_ylabel(r"$\dot{v}_{\theta}$ [m/s$^2$]")
+        axs[3].yaxis.set_major_formatter(formatter)
+        axs[3].set_xlabel(r"$t$ [s]")
+        axs[3].plot(timesteps, df.iloc[:, DataVarIndex.DELTA_V_THETA], "-")
+    
         return fig
+
 
     def plot_data_single_it(
         self,
@@ -1347,7 +1406,7 @@ class Plotter:
         plot_names.append("position")
 
         figs.append(self.plot_position_with_gates())
-        plot_names.append("position with gates")
+        plot_names.append("position_with_gates")
 
         figs.append(self.plot_velocity())
         plot_names.append("velocity")
@@ -1364,8 +1423,8 @@ class Plotter:
         figs.append(self.plot_rpy_raw_each_segment())
         plot_names.append("rpy_raw_segment")
 
-        fig = figs.append(self.plot_theta_v_theta())
-        plot_names.append("theta")
+        fig = figs.append(self.plot_s_v_s())
+        plot_names.append("path_progress")
 
         fig = figs.append(self.plot_status())
         plot_names.append("status")
@@ -1482,14 +1541,14 @@ class Plotter:
         avg_e_horz = np.mean(np.array(rmse_horz_list), axis=0)
 
         # Create Figure
-        fig0 = plt.figure(figsize=(16, 9))
+        fig0 = plt.figure()
         ax = fig0.add_subplot(1, 1, 1)
         ax.set_title("Prediction Error over Horizon")
         ax.set_xlabel("Horizon step")
         ax.set_ylabel("RMSE")
         ax.plot(avg_e_horz)
 
-        fig1 = plt.figure(figsize=(16, 9))
+        fig1 = plt.figure()
         ax = fig1.add_subplot(1, 1, 1)
         ax.set_title("Prediction Error along Trajectory")
         ax.set_xlabel("Traj step")
