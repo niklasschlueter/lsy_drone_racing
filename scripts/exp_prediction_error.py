@@ -18,6 +18,8 @@ import gymnasium
 import numpy as np
 from gymnasium.wrappers.jax_to_numpy import JaxToNumpy
 from mpcc.logging.data_logging import DataLogger
+import faulthandler
+faulthandler.enable()
 
 from lsy_drone_racing.control.attitude_controller_custom import AttitudeController
 from lsy_drone_racing.utils import load_config, load_controller
@@ -90,12 +92,12 @@ def simulate(
     # controller = None
     #tau = 1
     repetitions = 10
-    no_runs = 2
-    head_start_times = np.random.uniform(1.5, 1.5, repetitions*n_runs)
+    no_runs = 4
+    head_start_times = np.random.uniform(1.5, 5.5, repetitions*no_runs*no_runs)
     print(f"head start times: {head_start_times}")
-    for rep in range(repetitions):
-        for opponent_ctrl in ["learning"]:#, "pid"]:#[::-1]:#, "pid"]:
-            for predictor, n_runs in zip(["linear", "learning", "acados"], [0, no_runs, 0]):
+    for predictor, n_runs, reps in zip(["learning", "linear", "acados"], [no_runs, no_runs, no_runs], [no_runs * repetitions, repetitions, repetitions]):
+        for rep in range(reps):
+            for opponent_ctrl in ["learning", "pid"]:#[::-1]:#, "pid"]:
                 persistent_info = ({}, {})
                 # Consecutive Repetitions (only makes sense for learning between episodes)
                 for n_run in range(n_runs):  # Run n_runs episodes with the controller

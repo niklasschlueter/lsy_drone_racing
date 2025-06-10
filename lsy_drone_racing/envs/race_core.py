@@ -295,8 +295,8 @@ class RaceCoreEnv:
         masks = self._load_contact_masks(self.sim)
         masks = jp.array(masks, dtype=bool, device=self.device)
         gate_mj_ids, obstacle_mj_ids = self.gates["mj_ids"], self.obstacles["mj_ids"]
-        pos_limit_low = jp.array([-3, -3, 0], dtype=np.float32, device=self.device)
-        pos_limit_high = jp.array([3, 3, 2.5], dtype=np.float32, device=self.device)
+        pos_limit_low = jp.array([-4, -4, 0], dtype=np.float32, device=self.device)
+        pos_limit_high = jp.array([4, 4, 2.5], dtype=np.float32, device=self.device)
         self.data = EnvData.create(
             n_envs,
             n_drones,
