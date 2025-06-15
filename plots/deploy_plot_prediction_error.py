@@ -361,7 +361,9 @@ def plot_horizon_error(horizon_errors, predictors, colors, controller):
         #print(f"shape hoirzon_errors_mean_n_runs: {np.shape(horizon_errors_mean_n_runs)}")
         ##print(f"errors mean mean: {np.mean(errors_mean)}")
 
+        print(f"errors: {errors}")
         errors_mean = np.mean(errors, axis=0)
+        print(f"errors mean: {errors_mean}")
 
         # colorbar 
         import matplotlib.cm as cm
@@ -425,13 +427,14 @@ def plot_horizon_error(horizon_errors, predictors, colors, controller):
 
 def run_plots(controller: str = "pid"):
     
-    root = Path(__file__).parents[1] / "saves/exp_prediction_error_110625" / controller
+    root = Path(__file__).parents[1] / "saves/deploy/opponent_is_pid/plotting_data_format" / controller
     # original path
     #root = Path(__file__).parents[1] / "saves/exp_prediction_error" / controller
 
     errors = {}
     horizon_errors = []
-    predictors = ["linear", "learning", "acados"] #["linear", "learning", "acados"]
+    #predictors = ["linear", "learning", "acados"] #["linear", "learning", "acados"]
+    predictors = ["learning"] #["linear", "learning", "acados"]
     colors = ["blue", "red", "green"]
     for predictor in predictors:
         path = root / predictor
@@ -472,10 +475,13 @@ def run_plots(controller: str = "pid"):
                     raise ValueError
                 print(f"shape mean horizon error: {np.shape(mean_horizon_error)}")
             print(f"shape horizon error means: {np.shape(tau_horizon_errors_means)}")
-            if np.shape(tau_horizon_errors_means) == (4, 25):
+            #if np.shape(tau_horizon_errors_means) == (3, 25):
+            if True:
                 # Add errors from this tau to the overall list
                 errors[path.name].append(tau_errors)
                 horizon_errors[-1].append(tau_horizon_errors_means)
+            else:
+                print(f"shape {np.shape(tau_horizon_errors_means)} not valid")
 
     fig = plot_horizon_error(horizon_errors, predictors, colors, controller)
     save_path = f"summary_plots/horizon_error_{controller}.png"

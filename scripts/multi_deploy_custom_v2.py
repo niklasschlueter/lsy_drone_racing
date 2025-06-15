@@ -21,6 +21,8 @@ import gymnasium
 import rclpy
 
 from lsy_drone_racing.utils import load_config, load_controller
+import jax
+jax.config.update("jax_platform_name", "cpu")
 
 if TYPE_CHECKING:
     from multiprocessing.synchronize import Barrier
@@ -87,7 +89,7 @@ def control_loop(rank: int, config: ConfigDict, start_barrier: Barrier):
         controller_cls = load_controller(controller_path)
         controller = controller_cls(obs, info, config)
 
-        start_barrier.wait(timeout=10.0)  # Wait for all drones to be ready at the same time
+        start_barrier.wait(timeout=30.0)  # Wait for all drones to be ready at the same time
         start_time = time.perf_counter()
         while rclpy.ok():
             t_loop = time.perf_counter()
@@ -150,59 +152,61 @@ def main(config: str = "deploy_v2.toml"):
     while any(p.is_alive() for p in drone_processes):
         time.sleep(0.2)
 
-    print(f"After the controller run!")
-    with open('U_sim.pkl', 'rb') as f:
-        U = pickle.load(f)
+    if True:
 
-    with open('X_sim.pkl', 'rb') as f:
-        X = pickle.load(f)
+        print(f"After the controller run!")
+        with open('U_sim.pkl', 'rb') as f:
+            U = pickle.load(f)
 
-    print(f"shape X: {np.shape(X)}")
-    print(f"shape U: {np.shape(U)}")
+        with open('X_sim.pkl', 'rb') as f:
+            X = pickle.load(f)
 
-    with open('training_info.pkl', 'rb') as f:
-        training_dic = pickle.load(f)
-    print(f"training dic: {training_dic}")
+        print(f"shape X: {np.shape(X)}")
+        print(f"shape U: {np.shape(U)}")
 
-    from inv_rl.trainer import train
-    # Create a new leanring controller 
-    #control_path = Path(__file__).parents[1] / "lsy_drone_racing/control"
-    ## Will take the absolute path if provided in config.controller.file
-    #controller_path = control_path / config.controller[1]["file"]
-    #controller_cls = load_controller(controller_path)
-    #controller = controller_cls(obs, info, config)
+        with open('training_info.pkl', 'rb') as f:
+            training_dic = pickle.load(f)
+        print(f"training dic: {training_dic}")
 
-    try: 
-        with open('persistent.pkl', 'rb') as f:
-            persistent = pickle.load(f)
+        from inv_rl.trainer import train
+        # Create a new leanring controller 
+        #control_path = Path(__file__).parents[1] / "lsy_drone_racing/control"
+        ## Will take the absolute path if provided in config.controller.file
+        #controller_path = control_path / config.controller[1]["file"]
+        #controller_cls = load_controller(controller_path)
+        #controller = controller_cls(obs, info, config)
 
-        X_train = persistent["X"]
-        U_train = persistent["U"]
-        print(f"loading data from persistent!")
-    except:
-        X_train = []
-        U_train = []
-        print(f"No persistent found - no data loaded!")
+        try: 
+            with open('persistent.pkl', 'rb') as f:
+                persistent = pickle.load(f)
 
-    X_train += [X]
-    U_train += [U]
-    print(f"num trajectories in data: {len(X_train)}")
-    td = training_dic
-    w = td["w"] 
-    print(f"w prev: {w}")
-    batch_size = td["batch_size"]
-    epochs = td["epochs"]
-    lr = td["lr"]
-    dt = td["dt"]
-    positions = td["positions"]
-    traj_length = td["traj_length"]
-    num_batches = td["num_batches"]
-    w = train(X_train, U_train, w, batch_size, epochs, lr, dt, positions, traj_length, M=100, num_batches=num_batches)
-    print(f"w new: {w}")
+            X_train = persistent["X"]
+            U_train = persistent["U"]
+            print(f"loading data from persistent!")
+        except:
+            X_train = []
+            U_train = []
+            print(f"No persistent found - no data loaded!")
 
-    persistent_dict = {"w": w, "X": X_train, "U": U_train}
-    with open("persistent.pkl", "wb") as f:
-        pickle.dump(persistent_dict, f)
+        X_train += [X]
+        U_train += [U]
+        print(f"num trajectories in data: {len(X_train)}")
+        td = training_dic
+        w = td["w"] 
+        print(f"w prev: {w}")
+        batch_size = td["batch_size"]
+        epochs = td["epochs"]
+        lr = td["lr"]
+        dt = td["dt"]
+        positions = td["positions"]
+        traj_length = td["traj_length"]
+        num_batches = td["num_batches"]
+        w = train(X_train, U_train, w, batch_size, epochs, lr, dt, positions, traj_length, M=100, num_batches=num_batches)
+        print(f"w new: {w}")
+
+        persistent_dict = {"w": w, "X": X_train, "U": U_train}
+        with open("persistent.pkl", "wb") as f:
+            pickle.dump(persistent_dict, f)
 
 
 

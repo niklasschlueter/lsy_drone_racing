@@ -262,7 +262,13 @@ def plot_normalized_error(errors, paths):
 
 
 def run_plots(controller: str = "pid"):
-    root = Path(__file__).parents[1] / "saves/exp_prediction_error" / controller
+    
+    root = Path(__file__).parents[1] / "saves/exp_prediction_error_110625" / controller
+    # (I think) presentation plots
+    #root = Path(__file__).parents[1] / "plots/backup_140525/saves/exp_prediction_error" / controller
+    #root = Path(__file__).parents[1] / "saves_130524/exp_prediction_error" / controller
+    # original location
+    #root = Path(__file__).parents[1] / "saves/exp_prediction_error" / controller
     #paths = [root / "linear", root / "acados", root / "learning"]
     predictors = ["linear", "learning", "acados"]
 
@@ -324,7 +330,8 @@ def run_plots(controller: str = "pid"):
                     untrained_times.append(finish_time)
                     untrained_crash.append(crash)
                     untrained_win.append(winner)
-                if path.name == "learning" and i==1:#i == len(dfs) - 1:  # Last result
+                #if path.name == "learning" and i==1:#i == len(dfs) - 1:  # Last result
+                if path.name == "learning" and i==len(dfs) - 1:  # Last result
                     trained_times.append(finish_time)
                     trained_crash.append(crash)
                     trained_win.append(winner)
@@ -332,6 +339,11 @@ def run_plots(controller: str = "pid"):
                     linear_times.append(finish_time)
                     linear_crash.append(crash)
                     linear_win.append(winner)
+
+    print(f"acados: {len(acados_times)}")
+    print(f"untrained: {len(untrained_times)}")
+    print(f"learning: {len(trained_times)}")
+    print(f"linear: {len(linear_times)}")
 
     # Calculate statistics
     def get_stats(times, crashes, wins):
@@ -347,8 +359,8 @@ def run_plots(controller: str = "pid"):
     acados_stats = get_stats(acados_times, acados_crash, acados_win)
 
     # Set up the plot
-    #fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(15, 5))
-    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(15, 5))
+    fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(15, 5))
+    #fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(15, 5))
     labels = ["Untrained", "Trained", "Linear", "MPC"]
     x = np.arange(len(labels))
     width = 0.35
@@ -403,13 +415,13 @@ def run_plots(controller: str = "pid"):
     #ax2.set_xticklabels(labels)
 
     ## Plot win rates
-    #wins = [untrained_stats[3], trained_stats[3], linear_stats[3], acados_stats[3]]
-    #print(f"wins: {wins}")
-    #ax3.bar(x, wins, width, color=colors)
-    #ax3.set_ylabel("Win Rate (%)")
-    #ax3.set_title("Win Rates")
-    #ax3.set_xticks(x)
-    #ax3.set_xticklabels(labels)
+    wins = [untrained_stats[3], trained_stats[3], linear_stats[3], acados_stats[3]]
+    print(f"wins: {wins}")
+    ax3.bar(x, wins, width, color=colors)
+    ax3.set_ylabel("Win Rate (%)")
+    ax3.set_title("Win Rates")
+    ax3.set_xticks(x)
+    ax3.set_xticklabels(labels)
 
 
     crashes = [untrained_stats[2], trained_stats[2], linear_stats[2], acados_stats[2]]

@@ -75,7 +75,7 @@ def control_loop(rank: int, config: ConfigDict, start_barrier: Barrier):
         controller_cls = load_controller(controller_path)
         controller = controller_cls(obs, info, config)
 
-        start_barrier.wait(timeout=10.0)  # Wait for all drones to be ready at the same time
+        start_barrier.wait(timeout=20.0)  # Wait for all drones to be ready at the same time
         start_time = time.perf_counter()
         while rclpy.ok():
             t_loop = time.perf_counter()
