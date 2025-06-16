@@ -16,7 +16,8 @@ from typing import TYPE_CHECKING
 import matplotlib.pyplot as plt
 import munch
 import numpy as np
-#from crazyflow.constants import MASS
+
+# from crazyflow.constants import MASS
 from inv_rl.control.quadrotor.attitude_mpc import create_integrator
 from mpcc.planners.minsnap_traj.planner_minsnap_sym import PolynomialPlanner
 from scipy.spatial.transform import Rotation as R
@@ -54,7 +55,7 @@ class SplineTracker:
         :param max_iter: Max number of ternary search steps
         :return: Refined t
         """
-        left = max(t_init  - delta, 0.0)
+        left = max(t_init - delta, 0.0)
         right = t_init + delta
 
         for _ in range(max_iter):
@@ -103,7 +104,6 @@ class AttitudeController(Controller):
         self.i_error = np.zeros(3)
         self.g = 9.81
         self._tick = 0
-
 
         self._id = info["id"]
 
@@ -156,8 +156,19 @@ class AttitudeController(Controller):
             self.lengths,
         ) = planner.plan(start_pos, gates_pos, gates_rpy)
 
-        #time_scaling = info.get("PID_time_scaling", 1.0)
-        time_scaling = 10.0
+        # time_scaling = info.get("PID_time_scaling", 1.0)
+        # 10.0 - lower end - is already really slow!
+        time_scaling = 4.0
+        if "cost_rand" in info.keys():
+            time_scaling_lower = 4.0
+            time_scaling_upper = 10.0
+            time_scaling = (
+                info["cost_rand"][0] * (time_scaling_upper - time_scaling_lower)
+                + time_scaling_lower
+            )
+            print(f"rand!")
+            print(f"timescaling: {time_scaling}")
+
         no_samples = int(approx_path_length * self.freq * time_scaling)
         self.ref = np.zeros((3, no_samples))
         for i, t in enumerate(np.linspace(0, self.theta_max, no_samples)):
@@ -213,7 +224,7 @@ class AttitudeController(Controller):
         """
         i = min(self._tick, len(self.x_des) - 1)
         # if i == len(self.x_des) - 1:  # Maximum duration reached
-        #self._finished = obs["target_gate"][self._id] == -1
+        # self._finished = obs["target_gate"][self._id] == -1
         if i == len(self.x_des) - 1:  # Maximum duration reached
             self._finished = True
 
@@ -285,7 +296,7 @@ class AttitudeController(Controller):
                 np.array([self.v_theta]),
             )
         )
-        #print(f"theta: {self.theta}")
+        # print(f"theta: {self.theta}")
 
         self.X += [mpcc_state]
 

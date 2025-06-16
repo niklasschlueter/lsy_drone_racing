@@ -9,14 +9,17 @@ from numpy.typing import NDArray
 
 import matplotlib
 
-matplotlib.use('TkAgg')
+matplotlib.use("TkAgg")
 from matplotlib import pyplot as plt
-plt.rcParams.update({
-    "text.usetex": True,
-    "font.family": "Times New Roman",
-    "font.size": 12,
-    "pgf.texsystem": "pdflatex",
-})
+
+plt.rcParams.update(
+    {
+        "text.usetex": True,
+        "font.family": "Times New Roman",
+        "font.size": 12,
+        "pgf.texsystem": "pdflatex",
+    }
+)
 
 
 def load_data(path: Path) -> list[pd.DataFrame]:
@@ -182,7 +185,6 @@ def compute_horizon_error(actual_positions, predictions):
     return value, std
 
 
-
 def plot_joint_error(errors, controller):
     """Create joint error plots comparing all methods."""
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 5))
@@ -286,9 +288,8 @@ def plot_joint_error(errors, controller):
     ax2.legend()
 
     plt.tight_layout()
-    #plt.show()
+    # plt.show()
     return fig
-
 
 
 def plot_normalized_error(errors, paths):
@@ -326,31 +327,32 @@ def plot_normalized_error(errors, paths):
     plt.tight_layout()
     plt.show()
 
+
 def plot_horizon_error(horizon_errors, predictors, colors, controller):
     fig = plt.figure()
 
     for k, (predictor, color) in enumerate(zip(predictors, colors)):
         # assume horizon errors are in the order linear, acados, learning
         errors = horizon_errors[k]
-        #print(f"shape horizon errors: {len(horizon_errors)}")
-        #print(f"shape horizon errors: {type(horizon_errors)}")
-        #print(f"shape horizon errors: {len(horizon_errors[0])}")
-        #print(f"shape horizon errors: {type(horizon_errors[0])}")
-        #print(f"shape horizon errors: {len(horizon_errors[0][1])}")
-        #print(f"shape horizon errors: {type(horizon_errors[0][1])}")
-        #errors_linear = horizon_errors[0]
-        #errors_acados = horizon_errors[1]
-        #errors_learning = horizon_errors[2]
+        # print(f"shape horizon errors: {len(horizon_errors)}")
+        # print(f"shape horizon errors: {type(horizon_errors)}")
+        # print(f"shape horizon errors: {len(horizon_errors[0])}")
+        # print(f"shape horizon errors: {type(horizon_errors[0])}")
+        # print(f"shape horizon errors: {len(horizon_errors[0][1])}")
+        # print(f"shape horizon errors: {type(horizon_errors[0][1])}")
+        # errors_linear = horizon_errors[0]
+        # errors_acados = horizon_errors[1]
+        # errors_learning = horizon_errors[2]
         # for each controller, the errors should have the shape reps, n_runs, horizon
-        #for i in range(len(errors[0])):
+        # for i in range(len(errors[0])):
 
-        #errors = pd.DataFrame(errors)
+        # errors = pd.DataFrame(errors)
 
-        #dimensions = len(horizon_errors)
-        #reps = len(errors[0])
+        # dimensions = len(horizon_errors)
+        # reps = len(errors[0])
 
-        #horizon_errors_mean_n_runs = []
-        #for rep in range(reps):
+        # horizon_errors_mean_n_runs = []
+        # for rep in range(reps):
         #    n_runs = len(errors[rep])
         #    horizon_errors = []#errors_mean = []
         #    for n_run in range(n_runs):
@@ -358,80 +360,102 @@ def plot_horizon_error(horizon_errors, predictors, colors, controller):
         #        #print(f"shape errors horizon: {errors_horizon}")
         #        horizon_errors += [errors[rep][n_run]]
         #    horizon_errors_mean_n_runs += [np.mean(horizon_errors, axis=0)]
-        #print(f"shape hoirzon_errors_mean_n_runs: {np.shape(horizon_errors_mean_n_runs)}")
+        # print(f"shape hoirzon_errors_mean_n_runs: {np.shape(horizon_errors_mean_n_runs)}")
         ##print(f"errors mean mean: {np.mean(errors_mean)}")
 
         errors_mean = np.mean(errors, axis=0)
 
-        # colorbar 
+        # colorbar
         import matplotlib.cm as cm
+
         num_iters = len(errors_mean)
         print(f"num iters: {num_iters}")
         learning_colors = cm.spring(np.linspace(0, 1, num_iters))  # or 'plasma', 'cividis', etc.
 
         # TODO: FIxed pred. time step -fix!
-        time_steps = np.arange(len(errors_mean[0])) * 1/30
-        #print(f"prev: {errors_mean}")
+        time_steps = np.arange(len(errors_mean[0])) * 1 / 30
+        # print(f"prev: {errors_mean}")
         errors_std = np.std(errors, axis=0)
         print(f"errors std: {errors_std}")
         for i in range(len(errors_mean)):
-
-            #if predictor == "learning":
+            # if predictor == "learning":
             #    print(f"i: {i}")
             #    color = learning_colors[i]
 
             if i == 0:
                 if predictor == "learning":
-                    plt.plot(time_steps, errors_mean[i], label=f"{predictor} it. 0", color=color, linestyle=":")# alpha=max((i+1)/len(errors_mean), 0.2))
+                    plt.plot(
+                        time_steps,
+                        errors_mean[i],
+                        label=f"{predictor} it. 0",
+                        color=color,
+                        linestyle=":",
+                    )  # alpha=max((i+1)/len(errors_mean), 0.2))
                 else:
-                    plt.plot(time_steps, errors_mean[i], color=color)#, linestyle=":")# alpha=max((i+1)/len(errors_mean), 0.2))
+                    plt.plot(
+                        time_steps, errors_mean[i], color=color
+                    )  # , linestyle=":")# alpha=max((i+1)/len(errors_mean), 0.2))
 
-            elif i == len(errors_mean)-1:
+            elif i == len(errors_mean) - 1:
                 # Just an ugly fix to change naming in plot.
                 if predictor == "acados":
                     predictor = "MPCC"
                 if predictor == "learning":
-                    plt.plot(time_steps, errors_mean[i], label=f"{predictor} it. {len(errors_mean)-1}", color=color)# alpha=max((i+1)/len(errors_mean), 0.2))
+                    plt.plot(
+                        time_steps,
+                        errors_mean[i],
+                        label=f"{predictor} it. {len(errors_mean) - 1}",
+                        color=color,
+                    )  # alpha=max((i+1)/len(errors_mean), 0.2))
                 else:
-                    plt.plot(time_steps, errors_mean[i], label=predictor, color=color)# alpha=max((i+1)/len(errors_mean), 0.2))
+                    plt.plot(
+                        time_steps, errors_mean[i], label=predictor, color=color
+                    )  # alpha=max((i+1)/len(errors_mean), 0.2))
             else:
                 if predictor == "learning":
                     if i == 1:
-                        plt.plot(time_steps, errors_mean[i], label=f"{predictor} it. 1-{len(errors_mean)-2}", color=color, linestyle="--")# alpha=max((i+1)/len(errors_mean), 0.2))
+                        plt.plot(
+                            time_steps,
+                            errors_mean[i],
+                            label=f"{predictor} it. 1-{len(errors_mean) - 2}",
+                            color=color,
+                            linestyle="--",
+                        )  # alpha=max((i+1)/len(errors_mean), 0.2))
                     else:
-                        plt.plot(time_steps, errors_mean[i], color=color, linestyle="--")# alpha=max((i+1)/len(errors_mean), 0.2))
+                        plt.plot(
+                            time_steps, errors_mean[i], color=color, linestyle="--"
+                        )  # alpha=max((i+1)/len(errors_mean), 0.2))
                 else:
-                    plt.plot(time_steps, errors_mean[i], color=color)#, linestyle="--") #alpha=max((i+1)/len(errors_mean), 0.4))
-            #plt.fill_between(np.arange(len(errors_mean[0])), errors_mean[i] - errors_std[i], errors_mean[i] + errors_std[i])
+                    plt.plot(
+                        time_steps, errors_mean[i], color=color
+                    )  # , linestyle="--") #alpha=max((i+1)/len(errors_mean), 0.4))
+            # plt.fill_between(np.arange(len(errors_mean[0])), errors_mean[i] - errors_std[i], errors_mean[i] + errors_std[i])
 
     plt.xlabel("time (s)")
     plt.ylabel("Average Prediction Error over Horizon (m)")
     if controller == "learning":
         controller = "MPCC"
     plt.title(f"Prediction Error over Horizon ({controller.upper()})")
-    plt.grid(True)#, axis="y")
+    plt.grid(True)  # , axis="y")
     plt.legend()
 
-    #x_lin = np.arange(len(linear_means))
-    #ax2.plot(x_lin, linear_means, label="Linear", color="blue")
-    #ax2.fill_between(
+    # x_lin = np.arange(len(linear_means))
+    # ax2.plot(x_lin, linear_means, label="Linear", color="blue")
+    # ax2.fill_between(
     #    x_lin, linear_means - linear_stds, linear_means + linear_stds, color="blue", alpha=0.2
-    #)
-    #plt.show()
+    # )
+    # plt.show()
     return fig
 
 
-
-
 def run_plots(controller: str = "pid"):
-    
-    root = Path(__file__).parents[1] / "saves/exp_prediction_error_110625" / controller
+    root = Path(__file__).parents[1] / "saves/exp_prediction_error_160625" / controller
     # original path
-    #root = Path(__file__).parents[1] / "saves/exp_prediction_error" / controller
+    # root = Path(__file__).parents[1] / "saves/exp_prediction_error" / controller
 
     errors = {}
     horizon_errors = []
-    predictors = ["linear", "learning", "acados"] #["linear", "learning", "acados"]
+    predictors = ["linear", "learning", "acados"]  # ["linear", "learning", "acados"]
     colors = ["blue", "red", "green"]
     for predictor in predictors:
         path = root / predictor
@@ -439,7 +463,7 @@ def run_plots(controller: str = "pid"):
         horizon_errors.append([])
 
         # Iterate through tau values from 1.0 to 2.0
-        for rep in range(100):#np.linspace(0.0, 1.0, 11):
+        for rep in range(100):  # np.linspace(0.0, 1.0, 11):
             rep_path = path / f"{rep:.1f}"
             if not rep_path.exists():
                 continue
@@ -462,7 +486,7 @@ def run_plots(controller: str = "pid"):
             # Compute errors for this tau value
             tau_errors = []
             tau_horizon_errors_means = []
-            tau_horizon_errors_stds= []
+            tau_horizon_errors_stds = []
             for pos, pred in zip(actual_positions, predictions):
                 tau_errors.append(compute_mean_prediction_error(pos, pred))
                 mean_horizon_error, std_horizon_error = compute_horizon_error(pos, pred)
@@ -492,6 +516,7 @@ def run_plots(controller: str = "pid"):
 def main():
     for controller in ["pid", "learning"]:
         run_plots(controller)
+
 
 if __name__ == "__main__":
     fire.Fire(main)

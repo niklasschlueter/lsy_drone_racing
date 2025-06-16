@@ -8,14 +8,18 @@ import pandas as pd
 from numpy.typing import NDArray
 import matplotlib
 
-matplotlib.use('TkAgg')
+matplotlib.use("TkAgg")
 from matplotlib import pyplot as plt
-plt.rcParams.update({
-    "text.usetex": True,
-    "font.family": "Times New Roman",
-    "font.size": 12,
-    "pgf.texsystem": "pdflatex",
-})
+
+plt.rcParams.update(
+    {
+        "text.usetex": True,
+        "font.family": "Times New Roman",
+        "font.size": 12,
+        "pgf.texsystem": "pdflatex",
+    }
+)
+
 
 def load_data(path: Path) -> list[pd.DataFrame]:
     # Path to the directory containing prediction error data
@@ -262,14 +266,13 @@ def plot_normalized_error(errors, paths):
 
 
 def run_plots(controller: str = "pid"):
-    
-    root = Path(__file__).parents[1] / "saves/exp_prediction_error_110625" / controller
+    root = Path(__file__).parents[1] / "saves/exp_prediction_error_160625" / controller
     # (I think) presentation plots
-    #root = Path(__file__).parents[1] / "plots/backup_140525/saves/exp_prediction_error" / controller
-    #root = Path(__file__).parents[1] / "saves_130524/exp_prediction_error" / controller
+    # root = Path(__file__).parents[1] / "plots/backup_140525/saves/exp_prediction_error" / controller
+    # root = Path(__file__).parents[1] / "saves_130524/exp_prediction_error" / controller
     # original location
-    #root = Path(__file__).parents[1] / "saves/exp_prediction_error" / controller
-    #paths = [root / "linear", root / "acados", root / "learning"]
+    # root = Path(__file__).parents[1] / "saves/exp_prediction_error" / controller
+    # paths = [root / "linear", root / "acados", root / "learning"]
     predictors = ["linear", "learning", "acados"]
 
     linear_times = []
@@ -311,18 +314,18 @@ def run_plots(controller: str = "pid"):
                     crash = True
                     print(f"not finished")
                 else:
-                    #finish_time = df["TIME"][finish_idx]
-                    finish_time = finish_idx * 1/df["CTRL_FREQ"][0]
+                    # finish_time = df["TIME"][finish_idx]
+                    finish_time = finish_idx * 1 / df["CTRL_FREQ"][0]
                     print(f"finish time: {finish_time}")
                 winner = not np.isnan(finish_time) and (
                     finish_idx <= opp_finish_idx or opp_finish_idx == 0
                 )
                 print(f"winner: {winner}")
 
-                #crash = (df["POS_Z"] < 0).any() and not (df["TARGET_GATE"] == -1).any()
-                #crash = not (df["TARGET_GATE"] == -1).any()
+                # crash = (df["POS_Z"] < 0).any() and not (df["TARGET_GATE"] == -1).any()
+                # crash = not (df["TARGET_GATE"] == -1).any()
                 print(f"crash: {crash}")
-                if path.name == "acados":# and (i == 0 or i==len(dfs) -1):
+                if path.name == "acados":  # and (i == 0 or i==len(dfs) -1):
                     acados_times.append(finish_time)
                     acados_crash.append(crash)
                     acados_win.append(winner)
@@ -330,12 +333,12 @@ def run_plots(controller: str = "pid"):
                     untrained_times.append(finish_time)
                     untrained_crash.append(crash)
                     untrained_win.append(winner)
-                #if path.name == "learning" and i==1:#i == len(dfs) - 1:  # Last result
-                if path.name == "learning" and i==len(dfs) - 1:  # Last result
+                # if path.name == "learning" and i==1:#i == len(dfs) - 1:  # Last result
+                if path.name == "learning" and i == 1:  # len(dfs) - 1:  # Last result
                     trained_times.append(finish_time)
                     trained_crash.append(crash)
                     trained_win.append(winner)
-                if path.name == "linear":# and (i == 0 or i==len(dfs) -1):
+                if path.name == "linear":  # and (i == 0 or i==len(dfs) -1):
                     linear_times.append(finish_time)
                     linear_crash.append(crash)
                     linear_win.append(winner)
@@ -360,14 +363,14 @@ def run_plots(controller: str = "pid"):
 
     # Set up the plot
     fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(15, 5))
-    #fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(15, 5))
+    # fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(15, 5))
     labels = ["Untrained", "Trained", "Linear", "MPC"]
     x = np.arange(len(labels))
     width = 0.35
 
     # Plot lap times with error bars
-    #times = [untrained_stats[0], trained_stats[0], linear_stats[0], acados_stats[0]]
-    #errors = [untrained_stats[1], trained_stats[1], linear_stats[1], acados_stats[1]]
+    # times = [untrained_stats[0], trained_stats[0], linear_stats[0], acados_stats[0]]
+    # errors = [untrained_stats[1], trained_stats[1], linear_stats[1], acados_stats[1]]
 
     # Plot lap times but without nans in the data.
     lap_time_data = [
@@ -385,34 +388,35 @@ def run_plots(controller: str = "pid"):
     print(f"shape lap time data linear:{np.shape(linear_times)}")
     print(f"lap time dataacados:{acados_times}")
     print(f"shape lap time data acados:{np.shape(acados_times)}")
-    assert(len(lap_time_data) == len(labels))
-    
+    assert len(lap_time_data) == len(labels)
+
     import seaborn as sns
-    #colors = ["orange", "red", "blue", "green"]
+
+    # colors = ["orange", "red", "blue", "green"]
     colors = sns.color_palette("colorblind")
-    #sns.set_theme(style="whitegrid")
+    # sns.set_theme(style="whitegrid")
     sns.set_theme(style="whitegrid", context="talk", palette="colorblind")
     bar_width = 0.3
     ## Create box plot on ax1
-    #ax1.boxplot(
+    # ax1.boxplot(
     #    lap_time_data,
     #    labels=labels,
     #    #showmeans=True,
     #    #meanline=True,
     #    notch=False
-    #)
+    # )
 
     ax1.set_ylabel("Lap Time (s)")
     ax1.set_title("Mean Lap Times")
     ax1.grid(True)
 
     ## Plot crash rates
-    #crashes = [untrained_stats[2], trained_stats[2], linear_stats[2], acados_stats[2]]
-    #ax2.bar(x, crashes, width, color=colors)
-    #ax2.set_ylabel("Crash Rate (%)")
-    #ax2.set_title("Crash Rates")
-    #ax2.set_xticks(x)
-    #ax2.set_xticklabels(labels)
+    # crashes = [untrained_stats[2], trained_stats[2], linear_stats[2], acados_stats[2]]
+    # ax2.bar(x, crashes, width, color=colors)
+    # ax2.set_ylabel("Crash Rate (%)")
+    # ax2.set_title("Crash Rates")
+    # ax2.set_xticks(x)
+    # ax2.set_xticklabels(labels)
 
     ## Plot win rates
     wins = [untrained_stats[3], trained_stats[3], linear_stats[3], acados_stats[3]]
@@ -423,41 +427,44 @@ def run_plots(controller: str = "pid"):
     ax3.set_xticks(x)
     ax3.set_xticklabels(labels)
 
-
     crashes = [untrained_stats[2], trained_stats[2], linear_stats[2], acados_stats[2]]
     wins = [untrained_stats[3], trained_stats[3], linear_stats[3], acados_stats[3]]
 
     # Create figure and axes
-    #fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(10, 12))
+    # fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(10, 12))
 
     # --- Box Plot for Lap Times ---
     # Flatten and label the data for seaborn
     lap_times_flat = [time for group in lap_time_data for time in group]
     methods = [label for label, group in zip(labels, lap_time_data) for _ in group]
 
-    lap_df = pd.DataFrame({
-        'Lap Time': lap_times_flat,
-        'Method': methods
-    })
+    lap_df = pd.DataFrame({"Lap Time": lap_times_flat, "Method": methods})
 
     # Prepare data for matplotlib boxplot
-    unique_methods = lap_df['Method'].unique()
-    data = [lap_df[lap_df['Method'] == method]['Lap Time'].values for method in unique_methods]
+    unique_methods = lap_df["Method"].unique()
+    data = [lap_df[lap_df["Method"] == method]["Lap Time"].values for method in unique_methods]
 
-    sns.boxplot(x='Method', y='Lap Time', data=lap_df, ax=ax1, palette=colors, showmeans=True, 
-    meanprops={"linestyle": "-", "color": "black"}, width=0.4)
-    #sns.violinplot(data=lap_df, x="Method", y="Lap Time", palette=colors, ax=ax1, inner="quartile")
-    
-    #plt.boxplot()
-    #box = ax1.boxplot(data, patch_artist=True, showmeans=True,
+    sns.boxplot(
+        x="Method",
+        y="Lap Time",
+        data=lap_df,
+        ax=ax1,
+        palette=colors,
+        showmeans=True,
+        meanprops={"linestyle": "-", "color": "black"},
+        width=0.4,
+    )
+    # sns.violinplot(data=lap_df, x="Method", y="Lap Time", palette=colors, ax=ax1, inner="quartile")
+
+    # plt.boxplot()
+    # box = ax1.boxplot(data, patch_artist=True, showmeans=True,
     #              meanprops={"linestyle": "-", "color": "black"}, colors=colors)
-    #sns.stripplot(data=lap_df, x="Method", y="Lap Time", palette=colors, ax=ax1,jitter=True)
-
+    # sns.stripplot(data=lap_df, x="Method", y="Lap Time", palette=colors, ax=ax1,jitter=True)
 
     ax1.set_title("Mean Lap Times")
     ax1.grid(True)
-    #ax2.set_ylabel(r"Crash Rate (%)")
-    #ax2.set_title("Crash Rates")
+    # ax2.set_ylabel(r"Crash Rate (%)")
+    # ax2.set_title("Crash Rates")
 
     # --- Crash Rates Bar Plot ---
     sns.barplot(x=labels, y=crashes, palette=colors, ax=ax2, width=bar_width)
@@ -467,15 +474,16 @@ def run_plots(controller: str = "pid"):
     ax2.grid(True)
 
     # --- Win Rates Bar Plot ---
-    #sns.barplot(x=labels, y=wins, palette=colors, ax=ax3, width=bar_width)
-    #ax3.set_ylabel("Win Rate (%)")
-    #ax3.set_title("Win Rates")
+    # sns.barplot(x=labels, y=wins, palette=colors, ax=ax3, width=bar_width)
+    # ax3.set_ylabel("Win Rate (%)")
+    # ax3.set_title("Win Rates")
 
     plt.tight_layout()
     save_path = f"summary_plots/table_stats_{controller}.png"
     os.makedirs(os.path.dirname(save_path), exist_ok=True)
     plt.savefig(save_path, dpi=400)
     plt.show()
+
 
 def main():
     for controller in ["pid", "learning"]:
