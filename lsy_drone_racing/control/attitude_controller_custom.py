@@ -160,7 +160,7 @@ class AttitudeController(Controller):
         # 10.0 - lower end - is already really slow!
         time_scaling = 4.0
         if "cost_rand" in info.keys():
-            time_scaling_lower = 4.0
+            time_scaling_lower = 7.0
             time_scaling_upper = 10.0
             time_scaling = (
                 info["cost_rand"][0] * (time_scaling_upper - time_scaling_lower)

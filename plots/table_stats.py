@@ -266,7 +266,8 @@ def plot_normalized_error(errors, paths):
 
 
 def run_plots(controller: str = "pid"):
-    root = Path(__file__).parents[1] / "saves/exp_prediction_error_160625" / controller
+    # root = Path(__file__).parents[1] / "saves/exp_prediction_error_160625" / controller
+    root = Path(__file__).parents[1] / "saves/exp_prediction_error" / controller
     # (I think) presentation plots
     # root = Path(__file__).parents[1] / "plots/backup_140525/saves/exp_prediction_error" / controller
     # root = Path(__file__).parents[1] / "saves_130524/exp_prediction_error" / controller
@@ -334,7 +335,7 @@ def run_plots(controller: str = "pid"):
                     untrained_crash.append(crash)
                     untrained_win.append(winner)
                 # if path.name == "learning" and i==1:#i == len(dfs) - 1:  # Last result
-                if path.name == "learning" and i == 1:  # len(dfs) - 1:  # Last result
+                if path.name == "learning" and i == len(dfs) - 1:  # Last result
                     trained_times.append(finish_time)
                     trained_crash.append(crash)
                     trained_win.append(winner)

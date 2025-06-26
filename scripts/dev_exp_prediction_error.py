@@ -94,17 +94,21 @@ def simulate(
     # tau = 1
     repetitions = 10
     no_runs = 4
-    head_start_times = np.random.uniform(1.0, 4.0, repetitions * no_runs * no_runs)
-    cost_func_rand_values = np.random.uniform(0.0, 1.0, repetitions * no_runs * no_runs * 10)
+    # no_runs = 1
+    head_start_times = np.random.uniform(2.0, 2.0, repetitions * no_runs * no_runs)
+    cost_func_rand_values = np.random.uniform(1.0, 1.0, repetitions * no_runs * 10)
     print(f"head start times: {head_start_times}")
     for predictor, n_runs, reps in zip(
-        ["learning", "linear", "acados"],
-        [no_runs, no_runs, no_runs],
-        [no_runs * repetitions, repetitions, repetitions],
+        # ["learning", "linear", "acados"],
+        ["linear"],
+        # [no_runs, no_runs, no_runs],
+        [no_runs],
+        # [no_runs * repetitions, repetitions, repetitions],
+        [no_runs * repetitions],
     ):
         # for predictor, n_runs, reps in zip(["learning", "linear"], [no_runs], [repetitions]):
         for rep in range(reps):
-            for opponent_ctrl in ["pid", "learning"]:  # [::-1]:#, "pid"]:
+            for opponent_ctrl in ["learning"]:  # [::-1]:#, "pid"]:
                 persistent_info = ({}, {})
                 # Consecutive Repetitions (only makes sense for learning between episodes)
                 for n_run in range(n_runs):  # Run n_runs episodes with the controller
@@ -127,9 +131,8 @@ def simulate(
                     info["settings_predictor"] = predictor
                     # info["settings_controller1"] = "mpcc"
 
-                    info["cost_rand"] = cost_func_rand_values[
-                        (rep + 1) * (n_run + 1) - 1 : (rep + 1) * (n_run + 1) - 1 + 10
-                    ]
+                    # Note: We are training the predictor for n_runs, therefore the opponent should stay the same in that timeframe.
+                    info["cost_rand"] = cost_func_rand_values[rep * 10 : (rep + 1) * 10]
                     print(f"cost rand: {info['cost_rand']}")
 
                     hover_time = head_start_times[(rep + 1) * (n_run + 1) - 1]

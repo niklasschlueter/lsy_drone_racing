@@ -449,13 +449,14 @@ def plot_horizon_error(horizon_errors, predictors, colors, controller):
 
 
 def run_plots(controller: str = "pid"):
-    root = Path(__file__).parents[1] / "saves/exp_prediction_error_160625" / controller
+    root = Path(__file__).parents[1] / "saves/exp_prediction_error" / controller
     # original path
     # root = Path(__file__).parents[1] / "saves/exp_prediction_error" / controller
 
     errors = {}
     horizon_errors = []
     predictors = ["linear", "learning", "acados"]  # ["linear", "learning", "acados"]
+    # predictors = ["learning"]  # ["linear", "learning", "acados"]
     colors = ["blue", "red", "green"]
     for predictor in predictors:
         path = root / predictor
