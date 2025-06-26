@@ -46,6 +46,7 @@ jobs:
           # Set environment variables for acados Python interface
           echo "export ACADOS_SOURCE_DIR=$GITHUB_WORKSPACE/acados" >> $GITHUB_ENV
           echo "export ACADOS_INSTALL_DIR=$GITHUB_WORKSPACE/acados_install" >> $GITHUB_ENV
+          echo "LD_LIBRARY_PATH=$GITHUB_WORKSPACE/acados/lib:\$LD_LIBRARY_PATH" >> $GITHUB_ENV
           echo "$GITHUB_WORKSPACE/acados/interfaces/acados_template" >> $GITHUB_PATH
 
           # Install acados Python interface
