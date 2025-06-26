@@ -29,6 +29,14 @@ jobs:
           create-args: python=3.12
           cache-environment: true
 
+      - name: Download tera_renderer (non-interactive)
+        run: |
+          mkdir -p acados/bin
+          curl -L https://github.com/acados/tera_renderer/releases/download/v0.0.34/t_renderer-v0.0.34-linux \
+            -o acados/bin/t_renderer
+          chmod +x acados/bin/t_renderer
+        shell: micromamba-shell {0}
+
       - name: Install ACADOS with Python interface
         shell: micromamba-shell {0}
         run: |
@@ -56,13 +64,6 @@ jobs:
           #cd ../..
           #source .github/linux/install_tera.sh
 
-      - name: Download tera_renderer (non-interactive)
-        run: |
-          mkdir -p acados/bin
-          curl -L https://github.com/acados/tera_renderer/releases/download/v0.0.34/t_renderer-v0.0.34-linux \
-            -o acados/bin/t_renderer
-          chmod +x acados/bin/t_renderer
-        shell: micromamba-shell {0}
 
       - run: pip install .[online_submission,test]
         shell: micromamba-shell {0}
