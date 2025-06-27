@@ -47,17 +47,24 @@ jobs:
           cd ../interfaces/acados_template
           pip install .
 
-      - name: Set ACADOS Paths
-        shell: bash
-        run: |
-          # Set environment variables for acados Python interface
-          echo "export ACADOS_SOURCE_DIR=$GITHUB_WORKSPACE/acados" >> $GITHUB_ENV
-          #echo "export ACADOS_INSTALL_DIR=$GITHUB_WORKSPACE/acados_install" >> $GITHUB_ENV
-          echo "LD_LIBRARY_PATH=$GITHUB_WORKSPACE/acados/lib:\$LD_LIBRARY_PATH" >> $GITHUB_ENV
-          echo "$GITHUB_WORKSPACE/acados/interfaces/acados_template" >> $GITHUB_PATH
+      #- name: Set ACADOS Paths
+      #  shell: bash
+      #  run: |
+      #    # Set environment variables for acados Python interface
+      #    echo "export ACADOS_SOURCE_DIR=$GITHUB_WORKSPACE/acados" >> $GITHUB_ENV
+      #    #echo "export ACADOS_INSTALL_DIR=$GITHUB_WORKSPACE/acados_install" >> $GITHUB_ENV
+      #    echo "LD_LIBRARY_PATH=$GITHUB_WORKSPACE/acados/lib:\$LD_LIBRARY_PATH" >> $GITHUB_ENV
+      #    echo "$GITHUB_WORKSPACE/acados/interfaces/acados_template" >> $GITHUB_PATH
 
-          #cd ../..
-          #source .github/linux/install_tera.sh
+      #    #cd ../..
+      #    #source .github/linux/install_tera.sh
+      #    #
+      #    #
+      - name: Export ACADOS Paths for all micromamba-shells
+        run: |
+          echo "ACADOS_SOURCE_DIR=${GITHUB_WORKSPACE}/acados" >> $GITHUB_ENV
+          echo "LD_LIBRARY_PATH=${GITHUB_WORKSPACE}/acados/lib:$LD_LIBRARY_PATH" >> $GITHUB_ENV
+          echo "${GITHUB_WORKSPACE}/acados/interfaces/acados_template" >> $GITHUB_PATH
 
       - name: Download tera_renderer (non-interactive)
         run: |
@@ -78,9 +85,8 @@ jobs:
       - name: Run simulation tests
         shell: micromamba-shell {0}
         run: | 
-          export ACADOS_SOURCE_DIR=$GITHUB_WORKSPACE/acados
-          export LD_LIBRARY_PATH=$GITHUB_WORKSPACE/acados/lib:\$LD_LIBRARY_PATH
-          #echo "$GITHUB_WORKSPACE/acados/interfaces/acados_template" >> $GITHUB_PATH
+          #export ACADOS_SOURCE_DIR=$GITHUB_WORKSPACE/acados
+          #export LD_LIBRARY_PATH=$GITHUB_WORKSPACE/acados/lib:\$LD_LIBRARY_PATH
           python scripts/kaggle.py
       - name: Export with kaggle
         run: kaggle competitions submit -c lsy-drone-racing-ss-25 -f submission.csv -m "Automated submission"
