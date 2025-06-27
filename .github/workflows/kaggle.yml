@@ -2,63 +2,48 @@ name: Online Competition
 
 on:
   push:
-    branches:
-      #- master
-      #- main
-      - kaggle
+    branches: [kaggle]
   workflow_dispatch:
-
 
 jobs:
   online-competition:
-    # Skip this job if running on the main repo to prevent failing CI/CD. Only run on student forks.
+    # 👉 Skip on upstream repo – nur auf deinem Fork laufen lassen
     if: ${{ github.repository != 'utiasDSL/lsy_drone_racing' }}
-
     runs-on: ubuntu-latest
-    env: # Or as an environment variable
+
+    env:
       KAGGLE_USERNAME: ${{ secrets.KaggleUsername }}
       KAGGLE_KEY: ${{ secrets.KaggleKey }}
 
     steps:
+      ############################################################
+      # ---- Quellcode holen ------------------------------------#
+      ############################################################
       - uses: actions/checkout@v4
+        with:
+          submodules: recursive   # <-- acados-Submodul gleich mitklonen
+
+      ############################################################
+      # ---- Micromamba-Umgebung --------------------------------#
+      ############################################################
       - uses: mamba-org/setup-micromamba@v1
         with:
-          micromamba-version: '2.1.0-0' # any version from https://github.com/mamba-org/micromamba-releases
+          micromamba-version: "2.1.0-0"
           environment-name: test-env
           init-shell: bash
           create-args: python=3.12
           cache-environment: true
 
-      - name: Install ACADOS with Python interface
+      ############################################################
+      # ---- Projekt-Abhängigkeiten -----------------------------#
+      ############################################################
+      - name: Install Python package (inkl. online_submission & tests)
+        run: pip install .[online_submission,test]
         shell: micromamba-shell {0}
-        run: |
-          git clone https://github.com/acados/acados.git
-          cd acados
-          git checkout tags/v0.5.0
-          git submodule update --recursive --init
 
-          mkdir -p build
-          cd build
-          cmake -DACADOS_WITH_QPOASES=ON ..
-          cmake .. -DACADOS_WITH_QPOASES=ON #-DCMAKE_INSTALL_PREFIX=$GITHUB_WORKSPACE/acados_install
-          make install -j$(nproc)
-
-          # Install acados Python interface
-          cd ../interfaces/acados_template
-          pip install .
-
-      - name: Set ACADOS Paths
-        shell: bash
-        run: |
-          # Set environment variables for acados Python interface
-          echo "export ACADOS_SOURCE_DIR=$GITHUB_WORKSPACE/acados" >> $GITHUB_ENV
-          #echo "export ACADOS_INSTALL_DIR=$GITHUB_WORKSPACE/acados_install" >> $GITHUB_ENV
-          echo "LD_LIBRARY_PATH=$GITHUB_WORKSPACE/acados/lib:\$LD_LIBRARY_PATH" >> $GITHUB_ENV
-          echo "$GITHUB_WORKSPACE/acados/interfaces/acados_template" >> $GITHUB_PATH
-
-          #cd ../..
-          #source .github/linux/install_tera.sh
-
+      ############################################################
+      # ---- acados vorbereiten ---------------------------------#
+      ############################################################
       - name: Download tera_renderer (non-interactive)
         run: |
           mkdir -p acados/bin
@@ -67,17 +52,43 @@ jobs:
           chmod +x acados/bin/t_renderer
         shell: micromamba-shell {0}
 
-      #- name: Export Paths
-      #  working-directory: $GITHUB_WORKSPACE/acados
-      #  shell: bash 
-      #  run: |
-      #    $GITHUB_WORKSPACE/acados/.github/linux/export_paths.sh'' $GITHUB_WORKSPACE
-
-      - run: pip install .[online_submission,test]
+      - name: Build acados (Release)
+        run: |
+          sudo apt-get update && sudo apt-get install -y build-essential cmake
+          cd acados
+          mkdir -p build && cd build
+          cmake .. \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DACADOS_WITH_QPOASES=ON \
+            -DACADOS_WITH_OPENMP=OFF \
+            -DACADOS_INSTALL_DIR=$GITHUB_WORKSPACE/acados
+          make -j$(nproc)
+          make install            # installiert nach $GITHUB_WORKSPACE/acados
         shell: micromamba-shell {0}
-      - name: Run simulation tests
+
+      ############################################################
+      # ---- acados_template installieren -----------------------#
+      ############################################################
+      - name: Install acados_template
+        run: pip install ./acados/interfaces/acados_template
+        shell: micromamba-shell {0}
+
+      ############################################################
+      # ---- Umgebungsvariablen für Python ----------------------#
+      ############################################################
+      - name: Export acados env vars
+        run: |
+          echo "ACADOS_SOURCE_DIR=$GITHUB_WORKSPACE/acados" >> $GITHUB_ENV
+          echo "LD_LIBRARY_PATH=$GITHUB_WORKSPACE/acados/lib:\$LD_LIBRARY_PATH" >> $GITHUB_ENV
+        shell: bash              # env-Vars müssen im Aufrufer-Shell gesetzt werden
+
+      ############################################################
+      # ---- Simulation + Submission ----------------------------#
+      ############################################################
+      - name: Run simulation tests (kaggle.py)
         run: python scripts/kaggle.py
         shell: micromamba-shell {0}
-      - name: Export with kaggle
+
+      - name: Export submission to Kaggle
         run: kaggle competitions submit -c lsy-drone-racing-ss-25 -f submission.csv -m "Automated submission"
         shell: micromamba-shell {0}
