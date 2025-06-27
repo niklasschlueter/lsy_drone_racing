@@ -65,10 +65,10 @@ jobs:
         shell: micromamba-shell {0}
 
       - name: Export Paths
-        working-directory: $HOME/acados
+        working-directory: $GITHUB_WORKSPACE/acados
         shell: bash 
         run: |
-          $HOME/acados/.github/linux/export_paths.sh'' $HOME
+          $GITHUB_WORKSPACE/acados/.github/linux/export_paths.sh'' $GITHUB_WORKSPACE
 
       - run: pip install .[online_submission,test]
         shell: micromamba-shell {0}
