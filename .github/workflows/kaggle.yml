@@ -64,6 +64,12 @@ jobs:
           chmod +x acados/bin/t_renderer
         shell: micromamba-shell {0}
 
+      - name: Export Paths
+        working-directory: $HOME/acados
+        shell: bash 
+        run: |
+          $HOME/acados/.github/linux/export_paths.sh'' $HOME
+
       - run: pip install .[online_submission,test]
         shell: micromamba-shell {0}
       - name: Run simulation tests
