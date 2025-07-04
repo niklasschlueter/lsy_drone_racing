@@ -95,8 +95,8 @@ def simulate(
     repetitions = 10
     no_runs = 4
     # no_runs = 1
-    head_start_times = np.random.uniform(2.0, 2.0, repetitions * no_runs * no_runs)
-    cost_func_rand_values = np.random.uniform(1.0, 1.0, repetitions * no_runs * 10)
+    head_start_times = np.random.uniform(1.0, 4.0, repetitions * no_runs * no_runs)
+    cost_func_rand_values = np.random.uniform(0.0, 1.0, repetitions * no_runs * 10)
     print(f"head start times: {head_start_times}")
     for predictor, n_runs, reps in zip(
         # ["learning", "linear", "acados"],

@@ -20,6 +20,7 @@ import numpy as np
 # from crazyflow.constants import MASS
 from inv_rl.control.quadrotor.attitude_mpc import create_integrator
 from mpcc.planners.minsnap_traj.planner_minsnap_sym import PolynomialPlanner
+from mpcc.planners.PMM.planner_pmm_sym import PMMPlanner
 from scipy.spatial.transform import Rotation as R
 from scipy.spatial.transform import Rotation as Rot
 from lsy_drone_racing.control import Controller
@@ -142,7 +143,7 @@ class AttitudeController(Controller):
             rot = Rot.from_quat(q)
             gates_rpy[i, :] = rot.as_euler("xyz", degrees=False)  # Set degrees=False for radians
 
-        planner = PolynomialPlanner(obs, info, planner_config)  # self.CTRL_FREQ)
+        planner = PMMPlanner(obs, info, planner_config)  # self.CTRL_FREQ)
         (
             self.cs_x,
             self.cs_y,
