@@ -94,7 +94,7 @@ class AttitudeController(Controller):
             info: Additional environment information from the reset.
             config: The configuration of the environment.
         """
-        # super().__init__(obs, info, config)
+        super().__init__(obs, info, config)
         self.freq = config.env.freq
         self.dt = 1 / self.freq
         self.drone_mass = MASS
