@@ -12,6 +12,7 @@ from __future__ import annotations
 import logging
 from pathlib import Path
 from typing import TYPE_CHECKING
+import time
 
 import fire
 import gymnasium
@@ -97,7 +98,7 @@ def simulate(
     # no_runs = 1
     head_start_times = np.random.uniform(1.0, 4.0, repetitions * no_runs * no_runs)
     cost_func_rand_values = np.random.uniform(0.0, 1.0, repetitions * no_runs * 10)
-    print(f"head start times: {head_start_times}")
+    # print(f"head start times: {head_start_times}")
     for predictor, n_runs, reps in zip(
         # ["learning", "linear", "acados"],
         ["linear"],
@@ -133,16 +134,8 @@ def simulate(
 
                     # Note: We are training the predictor for n_runs, therefore the opponent should stay the same in that timeframe.
                     info["cost_rand"] = cost_func_rand_values[rep * 10 : (rep + 1) * 10]
-                    print(f"cost rand: {info['cost_rand']}")
 
                     hover_time = head_start_times[(rep + 1) * (n_run + 1) - 1]
-                    print("#################################################################")
-                    print("#################################################################")
-                    print("#################################################################")
-                    print(f"hover time exp pred: {hover_time}")
-                    print("#################################################################")
-                    print("#################################################################")
-                    print("#################################################################")
                     info["settings_initial_hover_time"] = hover_time
 
                     info["persistent"] = persistent_info
@@ -170,6 +163,7 @@ def simulate(
                     print(f"saving data to: {str(save_path / f'run{n_run:03d}.csv')}")
 
                     while True:
+                        t0 = time.perf_counter()
                         curr_time = i / config.env.freq
                         action, ctrl_info = controller.compute_control(obs, info)
                         obs, reward, terminated, truncated, info = env.step(action)
@@ -243,6 +237,8 @@ def simulate(
                                             )
 
                                 env.render()
+                                tend = time.perf_counter()
+                                print(f"sim freq: {1 / (tend - t0)}")
                         i += 1
                         if done:
                             break

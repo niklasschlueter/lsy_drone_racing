@@ -7,6 +7,7 @@ import numpy as np
 import pandas as pd
 from numpy.typing import NDArray
 
+import logging
 import matplotlib
 
 matplotlib.use("TkAgg")
@@ -20,6 +21,8 @@ plt.rcParams.update(
         "pgf.texsystem": "pdflatex",
     }
 )
+
+logger = logging.getLogger(__name__)
 
 
 def load_data(path: Path) -> list[pd.DataFrame]:
@@ -45,7 +48,7 @@ def preprocess_data(dfs: list[pd.DataFrame]) -> tuple[list[NDArray], list[NDArra
         # Drop rows where opponent z position is negative -> has been warped out of sim
         df = df[df["OPP_POS_Z"] >= 0]
         if df.shape[0] == 0:
-            print(f"ATTENTION: opponent eliminated before we even start the round.")
+            logger.debug(f"ATTENTION: opponent eliminated before we even start the round.")
             continue
         # Check that control frequency is constant throughout trajectory
         ctrl_freq_vals = df["CTRL_FREQ"].unique()

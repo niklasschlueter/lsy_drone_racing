@@ -13,6 +13,7 @@ from __future__ import annotations  # Python 3.10 type hints
 from typing import TYPE_CHECKING
 
 import numpy as np
+import time
 from crazyflow.constants import MASS
 from inv_rl.attitude_mpc_wrapper import LearningController
 from mpcc.control.controller_single import ControllerSingle as MPCC
@@ -83,9 +84,14 @@ class AttitudeController(Controller):
         Returns:
             The collective thrust and orientation [t_des, r_des, p_des, y_des] as a numpy array.
         """
+        t0 = time.perf_counter()
         action = np.zeros((1, 2, 4))
         action[0, 0, :], ctrl_info_0 = self.controller_0.compute_control(obs, info)
+        t2 = time.perf_counter()
         action[0, 1, :], ctrl_info_1 = self.controller_1.compute_control(obs, info)
+        t1 = time.perf_counter()
+        #print(f"ctrl time1 : {t2-t0}")
+        #print(f"ctrl time2: {t1-t2}")
         return action, (ctrl_info_0, ctrl_info_1)
 
     def step_callback(

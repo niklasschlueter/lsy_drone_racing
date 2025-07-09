@@ -167,8 +167,6 @@ class AttitudeController(Controller):
                 info["cost_rand"][0] * (time_scaling_upper - time_scaling_lower)
                 + time_scaling_lower
             )
-            print(f"rand!")
-            print(f"timescaling: {time_scaling}")
 
         no_samples = int(approx_path_length * self.freq * time_scaling)
         self.ref = np.zeros((3, no_samples))

@@ -19,6 +19,7 @@ import numpy as np
 from gymnasium.wrappers.jax_to_numpy import JaxToNumpy
 from mpcc.logging.data_logging import DataLogger
 import faulthandler
+
 faulthandler.enable()
 
 from lsy_drone_racing.control.attitude_controller_custom import AttitudeController
@@ -90,56 +91,57 @@ def simulate(
 
     # If we want to retain information between episodes.
     # controller = None
-    #tau = 1
+    # tau = 1
     repetitions = 10
     no_runs = 4
-    head_start_times = np.random.uniform(1.5, 5.5, repetitions*no_runs*no_runs)
+    head_start_times = np.random.uniform(1.5, 5.5, repetitions * no_runs * no_runs)
     print(f"head start times: {head_start_times}")
-    for predictor, n_runs, reps in zip(["learning", "linear", "acados"], [no_runs, no_runs, no_runs], [no_runs * repetitions, repetitions, repetitions]):
+    for predictor, n_runs, reps in zip(
+        ["learning", "linear", "acados"],
+        [no_runs, no_runs, no_runs],
+        [no_runs * repetitions, repetitions, repetitions],
+    ):
         for rep in range(reps):
-            for opponent_ctrl in ["learning", "pid"]:#[::-1]:#, "pid"]:
+            for opponent_ctrl in ["learning", "pid"]:  # [::-1]:#, "pid"]:
                 persistent_info = ({}, {})
                 # Consecutive Repetitions (only makes sense for learning between episodes)
                 for n_run in range(n_runs):  # Run n_runs episodes with the controller
-                    print(f"STARTING RUN {n_run}/{n_runs} WITH OPP CTRL {opponent_ctrl} AND PREDICTOR {predictor} IN REPETITION {rep}")
+                    print(
+                        f"STARTING RUN {n_run}/{n_runs} WITH OPP CTRL {opponent_ctrl} AND PREDICTOR {predictor} IN REPETITION {rep}"
+                    )
                     obs, info = env.reset()
-                    #PID_T_MIN, PID_T_MAX = 1.4, 2.0
-                    #MPCC_T_MIN, MPCC_T_MAX = 0.85, 0.95
+                    # PID_T_MIN, PID_T_MAX = 1.4, 2.0
+                    # MPCC_T_MIN, MPCC_T_MAX = 0.85, 0.95
                     # For information that is persistent between episodes.
-                    #info["persistent"] = persistent_info
-                    #info["PID_time_scaling"] = (PID_T_MAX - PID_T_MIN) * tau + PID_T_MIN
-                    #info["MPCC_weight_scale"] = (MPCC_T_MAX - MPCC_T_MIN) * tau + MPCC_T_MIN
+                    # info["persistent"] = persistent_info
+                    # info["PID_time_scaling"] = (PID_T_MAX - PID_T_MIN) * tau + PID_T_MIN
+                    # info["MPCC_weight_scale"] = (MPCC_T_MAX - MPCC_T_MIN) * tau + MPCC_T_MIN
                     # Choose controller!
-                    #opponent_ctrl = "learning"#"pid"
+                    # opponent_ctrl = "learning"#"pid"
                     info["settings_controller0"] = opponent_ctrl
-                    #info["settings_controller1"] = "mpcc"
+                    # info["settings_controller1"] = "mpcc"
 
-                    #predictor = "linear" #"learning" # "linear", "acados"
-                    info["settings_predictor"] = predictor 
-                    #info["settings_controller1"] = "mpcc"
+                    # predictor = "linear" #"learning" # "linear", "acados"
+                    info["settings_predictor"] = predictor
+                    # info["settings_controller1"] = "mpcc"
 
-                    hover_time = head_start_times[(rep+1)*(n_run+1)-1]
-                    print("#################################################################")
-                    print("#################################################################")
-                    print("#################################################################")
-                    print(f"hover time exp pred: {hover_time}")
-                    print("#################################################################")
-                    print("#################################################################")
-                    print("#################################################################")
+                    hover_time = head_start_times[(rep + 1) * (n_run + 1) - 1]
                     info["settings_initial_hover_time"] = hover_time
 
                     info["persistent"] = persistent_info
-                    #info["PID_time_scaling"] = 2.0
-                    #info["MPCC_weight_scale"] = 1.0
+                    # info["PID_time_scaling"] = 2.0
+                    # info["MPCC_weight_scale"] = 1.0
                     # Pass the episode number.
                     info["n_run"] = n_run
                     controller: Controller = controller_cls(obs, info, config)
-                    #opponent_ctrl = (
+                    # opponent_ctrl = (
                     #    "pid" if isinstance(controller.controller_0, AttitudeController) else "mpcc"
-                    #)
+                    # )
 
-                    #prediction = controller.controller_1.params.MPC_solver.opponent_prediction
-                    save_path = Path(__file__).parents[1] / "saves/exp_prediction_error" / opponent_ctrl
+                    # prediction = controller.controller_1.params.MPC_solver.opponent_prediction
+                    save_path = (
+                        Path(__file__).parents[1] / "saves/exp_prediction_error" / opponent_ctrl
+                    )
                     # save_path = Path(__file__).parents[1] / "saves/debug" / opponent_ctrl
                     save_path = save_path / predictor / f"{rep:.1f}"
                     save_path.mkdir(exist_ok=True, parents=True)
@@ -148,8 +150,7 @@ def simulate(
                     controller.controller_1.data_logger = DataLogger(
                         str(save_path / f"run{n_run:03d}.csv"), "attitude"
                     )
-                    print(f'saving data to: {str(save_path / f"run{n_run:03d}.csv")}')
-
+                    print(f"saving data to: {str(save_path / f'run{n_run:03d}.csv')}")
 
                     while True:
                         curr_time = i / config.env.freq
@@ -176,7 +177,9 @@ def simulate(
                                     for _id, color in zip(range(n_drones), colors):
                                         # resample traj. such that it has the length traget_len
                                         traj = ctrl_info[_id]["trajectory"]
-                                        indices = np.linspace(0, len(traj) - 1, target_len).astype(int)
+                                        indices = np.linspace(0, len(traj) - 1, target_len).astype(
+                                            int
+                                        )
                                         traj = traj[indices]
                                         # Calculate all the things to be able to plot the trajectory
                                         traj_pos.append(traj)  # ctrl_info[_id]["trajectory"])#.T
@@ -190,7 +193,10 @@ def simulate(
                                     for _id, color in zip(range(n_drones), colors):
                                         # Calculate all the things to be able tot plot the trajectory
                                         render_trace(
-                                            env.unwrapped.sim.viewer, traj_pos[_id], traj_rot[_id], color
+                                            env.unwrapped.sim.viewer,
+                                            traj_pos[_id],
+                                            traj_rot[_id],
+                                            color,
                                         )
 
                                         # Render the horizon
