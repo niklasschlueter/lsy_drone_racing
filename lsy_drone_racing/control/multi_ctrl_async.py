@@ -10,7 +10,6 @@ import numpy as np
 from crazyflow.constants import MASS
 from inv_rl.attitude_mpc_wrapper import LearningController
 from mpcc.control.controller_single import ControllerSingle as MPCC
-from pympler import asizeof
 
 from lsy_drone_racing.control import Controller
 from lsy_drone_racing.control.attitude_controller_custom import AttitudeController as AttCtrl

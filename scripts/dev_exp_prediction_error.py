@@ -101,7 +101,7 @@ def simulate(
     # print(f"head start times: {head_start_times}")
     for predictor, n_runs, reps in zip(
         # ["learning", "linear", "acados"],
-        ["linear"],
+        ["learning"],
         # [no_runs, no_runs, no_runs],
         [no_runs],
         # [no_runs * repetitions, repetitions, repetitions],

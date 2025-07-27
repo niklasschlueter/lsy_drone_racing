@@ -114,12 +114,13 @@ if __name__ == "__main__":
         cost_func_rand_values = np.random.uniform(0.0, 1.0, repetitions * no_runs * 10)
 
         for predictor, n_runs, reps in zip(
-            ["learning", "linear", "acados"],
+            #["learning", "linear", "acados"],
+            ["learning"],
             [no_runs, no_runs, no_runs],
             [no_runs * repetitions, repetitions, repetitions],
         ):
             for rep in range(reps):
-                for opponent_ctrl in ["learning", "pid"]:
+                for opponent_ctrl in ["learning"]:#, "pid"]:
                     persistent_info = ({}, {})
 
                     # Consecutive Repetitions (only makes sense for learning between episodes)
@@ -159,6 +160,7 @@ if __name__ == "__main__":
                         i = 0
                         fps = 30
                         while True:
+                            t0 = time.perf_counter()
                             curr_time = i / config.env.freq
 
                             action, ctrl_info = controller.compute_control(obs, info)
@@ -238,6 +240,9 @@ if __name__ == "__main__":
                                                 )
 
                                     env.render()
+                                    tend = time.perf_counter()
+                                    if i % 10 == 0:
+                                        print(f"sim freq: {1 / (tend - t0)}")
                             i += 1
                             if done:
                                 break

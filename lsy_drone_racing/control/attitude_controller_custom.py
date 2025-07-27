@@ -46,7 +46,7 @@ class SplineTracker:
         d = np.linalg.norm(spline_pos.squeeze() - current_position)
         return d
 
-    def refine_theta(self, t_init, current_position, delta=0.1, tol=1e-4, max_iter=25):
+    def refine_theta(self, t_init, current_position, delta=0.1, tol=1e-4, max_iter=5):
         """Refine theta by minimizing distance to spline.
 
         :param t_init: Initial guess for parameter t
