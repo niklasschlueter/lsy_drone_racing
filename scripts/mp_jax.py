@@ -1,6 +1,7 @@
 import multiprocessing as mp
 import os
 
+
 def jax_worker(proc_id):
     # Import JAX inside the subprocess
     import jax
@@ -15,8 +16,8 @@ def jax_worker(proc_id):
 
     print(f"[Process {proc_id}] Computation result: {result}")
 
+
 if __name__ == "__main__":
-    jax_worker(1)
     # Set start method to 'spawn' (safest for CUDA/JAX)
     mp.set_start_method("spawn", force=True)
 

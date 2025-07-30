@@ -38,6 +38,9 @@ class SplineTracker:
         self.cs_y_lin = cs_y_lin
         self.cs_z_lin = cs_z_lin
 
+        self.prev_theta = 0.0
+        self.prev_delta_theta_avg = 0.0
+
     def spline_position(self, t):
         return np.array([self.cs_x_lin(t), self.cs_y_lin(t), self.cs_z_lin(t)])
 
@@ -46,7 +49,7 @@ class SplineTracker:
         d = np.linalg.norm(spline_pos.squeeze() - current_position)
         return d
 
-    def refine_theta(self, t_init, current_position, delta=0.1, tol=1e-4, max_iter=5):
+    def refine_theta(self, t_init, current_position, delta=0.4, tol=1e-10, max_iter=250):
         """Refine theta by minimizing distance to spline.
 
         :param t_init: Initial guess for parameter t
@@ -73,7 +76,15 @@ class SplineTracker:
             else:
                 left = t1
 
-        return (left + right) / 2
+        theta = (left + right) / 2 + 1e-2
+        print(f"theta: {theta}")
+        return theta
+        # delta_theta = theta - self.prev_theta
+        # delta_theta_avg = (delta_theta + self.prev_delta_theta_avg) / 2
+        # theta = self.prev_theta + delta_theta_avg
+        # self.prev_theta = theta
+        # self.prev_delta_theta = delta_theta_avg
+        # return theta
 
     # def refine_theta(self, theta, pos):
     #    if self.distance_to_spline(theta+0.01, pos) > self.distance_to_spline(theta-0.01, pos):

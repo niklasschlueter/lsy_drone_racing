@@ -139,6 +139,7 @@ def simulate(
                     info["settings_initial_hover_time"] = hover_time
 
                     info["persistent"] = persistent_info
+                    print(f"info persistent: {info['persistent']}")
                     # info["PID_time_scaling"] = 2.0
                     # info["MPCC_weight_scale"] = 1.0
                     # Pass the episode number.
@@ -238,7 +239,9 @@ def simulate(
 
                                 env.render()
                                 tend = time.perf_counter()
-                                print(f"sim freq: {1 / (tend - t0)}")
+                                if i % 10 == 0:
+                                    pass
+                                    # print(f"sim freq: {1 / (tend - t0)}")
                         i += 1
                         if done:
                             break
@@ -246,6 +249,7 @@ def simulate(
                     controller.episode_callback()  # Update the controller internal state and models.
                     log_episode_stats(obs, info, config, curr_time)
                     persistent_info = controller.episode_reset()
+                    print(f"persistent info: {persistent_info}")
 
     # Close the environment
     env.close()
