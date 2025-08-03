@@ -19,7 +19,7 @@ from scipy.spatial.transform import Rotation as R
 
 from lsy_drone_racing.control.controller import Controller
 from scipy.spatial.transform import Rotation as R
- 
+
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -83,16 +83,17 @@ def load_config(path: Path) -> ConfigDict:
     with open(path, "r") as f:
         return ConfigDict(toml.load(f))
 
-def plot_mujoco_marker(env, pos, size=np.array([0.03, 0.03, 0.03]), rgba=np.array([0.8, 0.2, 0.2, 1.0])):
-    env.unwrapped.sim.viewer.viewer.add_marker(
-    type=mujoco.mjtGeom.mjGEOM_SPHERE, size=size, pos=pos, rgba=rgba)
+
+# def plot_mujoco_marker(env, pos, size=np.array([0.03, 0.03, 0.03]), rgba=np.array([0.8, 0.2, 0.2, 1.0])):
+#    env.unwrapped.sim.viewer.viewer.add_marker(
+#    type=mujoco.mjtGeom.mjGEOM_SPHERE, size=size, pos=pos, rgba=rgba)
 
 
 def render_trace(viewer, pos, rot, color=[1.0, 0.0, 0.0, 1.0]):
     """Render traces of the drone trajectories."""
     if len(pos) < 2 or viewer is None:
         return
-    
+
     assert isinstance(pos, np.ndarray)
     n_trace = len(rot)
     sizes = np.zeros((n_trace, 3))
@@ -108,6 +109,23 @@ def render_trace(viewer, pos, rot, color=[1.0, 0.0, 0.0, 1.0]):
             mat=mats[i].flatten(),
             rgba=np.array(color),
         )
+
+
+def render_marker(viewer, pos, rot=np.eye(3), color=[1.0, 0.0, 0.0, 1.0], size=np.ones(3)):
+    """Render traces of the drone trajectories."""
+    if len(pos) < 2 or viewer is None:
+        return
+
+    assert isinstance(pos, np.ndarray)
+    assert np.shape(size) == (3,)
+    viewer.viewer.add_marker(
+        type=mujoco.mjtGeom.mjGEOM_ELLIPSOID,
+        size=size,
+        pos=pos,
+        mat=rot.flatten(),
+        rgba=np.array(color),
+    )
+
 
 def draw_line(
     env: RaceCoreEnv,

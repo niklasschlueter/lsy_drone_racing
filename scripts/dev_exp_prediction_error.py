@@ -25,7 +25,7 @@ faulthandler.enable()
 
 from lsy_drone_racing.control.attitude_controller_custom import AttitudeController
 from lsy_drone_racing.utils import load_config, load_controller
-from lsy_drone_racing.utils.utils import render_trace, _rotation_matrix_from_points
+from lsy_drone_racing.utils.utils import render_trace, render_marker, _rotation_matrix_from_points
 
 if TYPE_CHECKING:
     from ml_collections import ConfigDict
@@ -222,6 +222,37 @@ def simulate(
                                                 horiz_pos,
                                                 horiz_rot,
                                                 color=[0.0, 1.0, 0.0, 1.0],
+                                            )
+
+                                        # print(f"keys: {ctrl_info[_id].keys()}")
+                                        # if "s" in ctrl_info[_id].keys():
+                                        #    print(ctrl_info[_id]["s"])
+                                        if (
+                                            "s" in ctrl_info[_id].keys()
+                                            and ctrl_info[_id]["s"] is not None
+                                        ):
+                                            pos = np.array(ctrl_info[_id]["s"])
+                                            render_marker(
+                                                env.unwrapped.sim.viewer,
+                                                # np.array([0.0, 0.0, 1.0]),
+                                                pos,
+                                                # color=[1.0, 0.0, 0.0, 1.0],
+                                                color=color,
+                                                size=np.ones(3) * 0.02,
+                                            )
+
+                                        if (
+                                            "opp_s" in ctrl_info[_id].keys()
+                                            and ctrl_info[_id]["opp_s"] is not None
+                                        ):
+                                            pos = np.array(ctrl_info[_id]["opp_s"])
+                                            render_marker(
+                                                env.unwrapped.sim.viewer,
+                                                # np.array([0.0, 0.0, 1.0]),
+                                                pos,
+                                                # color=[1.0, 0.0, 0.0, 1.0],
+                                                color=color,
+                                                size=np.ones(3) * 0.02,
                                             )
 
                                         # Render opp prediction

@@ -77,7 +77,7 @@ class SplineTracker:
                 left = t1
 
         theta = (left + right) / 2 + 1e-2
-        print(f"theta: {theta}")
+        # print(f"theta: {theta}")
         return theta
         # delta_theta = theta - self.prev_theta
         # delta_theta_avg = (delta_theta + self.prev_delta_theta_avg) / 2
